@@ -70,18 +70,19 @@ function spawnPet(petState: PetState, petId: string): void {
     const container = document.createElement('div');
     container.id = `pet-${petId}`;
     container.className = `dna-pet`;
+    container.style.setProperty('--pet-color', petState.color);
 
     const shadow = document.createElement('div');
     shadow.className = 'pet-shadow';
     container.appendChild(shadow);
 
+    // Visual Body (contains only body + pattern)
     const visual = document.createElement('div');
     visual.className = `pet-visual body-${petState.body} pat-${petState.pattern}`;
-    visual.style.setProperty('--pet-color', petState.color);
     
     if (petState.aura !== 'none') visual.classList.add(`aura-${petState.aura}`);
     
-    // Mecha-spider legs
+    // Mecha-spider legs (nested in visual because they scuttle with body)
     if (petState.body === 'mecha-spider') {
         for (let i = 1; i <= 4; i++) {
             const leg = document.createElement('div');
@@ -89,25 +90,29 @@ function spawnPet(petState: PetState, petId: string): void {
             visual.appendChild(leg);
         }
     }
+    container.appendChild(visual);
 
+    // Mutations Slot (OUTSIDE visual to avoid overflow clipping)
     petState.mutations.forEach(mut => {
         const mutEl = document.createElement('div');
         mutEl.className = `pet-mutation mut-${mut}`;
-        visual.appendChild(mutEl);
+        container.appendChild(mutEl);
     });
+
+    // Accessory Slot (OUTSIDE visual)
     if (petState.accessory !== 'none') {
         const accEl = document.createElement('div');
         accEl.className = `pet-accessory acc-${petState.accessory}`;
-        visual.appendChild(accEl);
+        container.appendChild(accEl);
     }
 
+    // Eyes & Face (OUTSIDE visual)
     const face = document.createElement('div');
     face.className = 'pet-face';
     const eyes = document.createElement('div');
     eyes.className = 'pet-eyes';
     face.appendChild(eyes);
-    visual.appendChild(face);
-    container.appendChild(visual);
+    container.appendChild(face);
     
     const idParts = petId.split('-');
     const month = idParts[2] || "???";
@@ -228,7 +233,8 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     let collectionChanged = false;
 
     for (const id in petCollection) {
-        if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
+        const parts = id.split('-');
+        if (parts.length < 3 || id.includes('undefined')) {
             delete petCollection[id];
             collectionChanged = true;
         }

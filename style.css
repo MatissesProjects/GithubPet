@@ -33,7 +33,7 @@
 }
 
 .pet-visual {
-    position: relative;
+    position: absolute;
     width: 100%;
     height: 100%;
     animation: pet-idle 3s infinite ease-in-out;
@@ -41,7 +41,7 @@
     background-color: var(--pet-color, #888);
     border: 1px solid rgba(255,255,255,0.2);
     box-sizing: border-box;
-    overflow: hidden; /* For patterns */
+    overflow: hidden; /* Only clips patterns */
 }
 
 .dna-pet.is-moving .pet-visual {
@@ -49,25 +49,11 @@
 }
 
 /* Patterns */
-.pet-visual.pat-stripes {
-    background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px);
-}
-.pet-visual.pat-dots {
-    background-image: radial-gradient(rgba(255,255,255,0.2) 20%, transparent 20%);
-    background-size: 6px 6px;
-}
-.pet-visual.pat-circuit {
-    background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
-    background-size: 8px 8px;
-}
-.pet-visual.pat-gradient-shift {
-    background-image: linear-gradient(135deg, transparent, rgba(0,0,0,0.4));
-    animation: grad-shift 5s infinite alternate;
-}
-@keyframes grad-shift {
-    from { filter: hue-rotate(0deg); }
-    to { filter: hue-rotate(45deg); }
-}
+.pet-visual.pat-stripes { background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px); }
+.pet-visual.pat-dots { background-image: radial-gradient(rgba(255,255,255,0.2) 20%, transparent 20%); background-size: 6px 6px; }
+.pet-visual.pat-circuit { background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 8px 8px; }
+.pet-visual.pat-gradient-shift { background-image: linear-gradient(135deg, transparent, rgba(0,0,0,0.4)); animation: grad-shift 5s infinite alternate; }
+@keyframes grad-shift { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(45deg); } }
 
 /* Face & Eyes */
 .pet-face {
@@ -76,7 +62,8 @@
     left: 15%;
     width: 70%;
     height: 40%;
-    z-index: 10;
+    z-index: 100;
+    pointer-events: none;
 }
 
 .pet-eyes {
@@ -116,54 +103,35 @@
 
 /* Moods */
 .dna-pet.mood-scared .pet-visual { animation: pet-shiver 0.1s infinite; filter: saturate(0.3); }
-.dna-pet.mood-scared .pet-eyes::before, .dna-pet.mood-scared .pet-eyes::after { transform: scale(0.4); }
 @keyframes pet-shiver { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(1px, 1px); } }
 
 .dna-pet.mood-ecstatic .pet-visual {
     animation: pet-idle 0.8s infinite ease-in-out;
     box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pet-color);
 }
-.dna-pet.mood-ecstatic .pet-eyes::before, .dna-pet.mood-ecstatic .pet-eyes::after { transform: scale(1.4); background: white !important; }
 
 /* Bodies */
-.pet-visual.body-slime { border-radius: 40% 40% 30% 30%; }
-.pet-visual.body-cube { border-radius: 4px; }
+.pet-visual.body-slime { border-radius: 40% 40% 30% 30%; background-image: radial-gradient(circle at 30% 30%, transparent, rgba(0,0,0,0.5)); }
+.pet-visual.body-cube { border-radius: 4px; background-image: linear-gradient(135deg, transparent, rgba(0,0,0,0.5)); }
 .pet-visual.body-wisp { border-radius: 50%; filter: brightness(1.5); animation: wisp-flicker 1s infinite alternate; }
 .pet-visual.body-orb { border-radius: 50%; box-shadow: inset -4px -4px 8px rgba(0,0,0,0.5), inset 4px 4px 8px rgba(255,255,255,0.3); }
 .pet-visual.body-crystal { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
 
 /* Mecha-Spider */
-.pet-visual.body-mecha-spider { 
-    clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); 
-}
-
-.pet-leg {
-    position: absolute;
-    width: 8px;
-    height: 2px;
-    background: inherit;
-    filter: brightness(0.6);
-    z-index: -1;
-    transform-origin: left center;
-}
-
+.pet-visual.body-mecha-spider { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
+.pet-leg { position: absolute; width: 8px; height: 2px; background: var(--pet-color); filter: brightness(0.6); z-index: -1; transform-origin: left center; }
 .leg-1 { top: 20%; left: -4px; transform: rotate(150deg); }
 .leg-2 { top: 80%; left: -4px; transform: rotate(210deg); }
 .leg-3 { top: 20%; right: -4px; transform: rotate(-30deg); transform-origin: right center; }
 .leg-4 { top: 80%; right: -4px; transform: rotate(30deg); transform-origin: right center; }
-
 .dna-pet.is-moving .leg-1, .dna-pet.is-moving .leg-3 { animation: leg-scuttle 0.2s infinite alternate; }
 .dna-pet.is-moving .leg-2, .dna-pet.is-moving .leg-4 { animation: leg-scuttle 0.2s infinite alternate-reverse; }
-
-@keyframes leg-scuttle {
-    from { transform: rotate(140deg); }
-    to { transform: rotate(160deg); }
-}
+@keyframes leg-scuttle { from { transform: rotate(140deg); } to { transform: rotate(160deg); } }
 
 /* Mutations */
 .pet-mutation {
     position: absolute;
-    background: inherit;
+    background-color: var(--pet-color);
     filter: brightness(0.8);
 }
 
@@ -184,7 +152,6 @@
     border-radius: 50%;
     background: gold !important;
     box-shadow: 0 0 10px gold;
-    filter: none;
 }
 
 .mut-bat-wings {
@@ -233,7 +200,7 @@
 }
 
 /* Accessories */
-.pet-accessory { position: absolute; z-index: 15; }
+.pet-accessory { position: absolute; z-index: 150; }
 
 .acc-hat {
     top: -6px;
@@ -262,7 +229,7 @@
     border-top: 2px solid #111;
     border-bottom: 2px solid #111;
     background: rgba(255,255,255,0.1) !important;
-    z-index: 20;
+    z-index: 200;
 }
 
 .acc-tie {
@@ -276,27 +243,11 @@
 }
 
 /* Auras */
-.pet-visual.aura-rainbow {
-    animation: aura-rainbow 3s linear infinite;
-}
-@keyframes aura-rainbow {
-    0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px red; }
-    33% { box-shadow: 0 0 10px green; }
-    66% { box-shadow: 0 0 10px blue; }
-    100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px red; }
-}
+.pet-visual.aura-rainbow { animation: aura-rainbow 3s linear infinite; }
+@keyframes aura-rainbow { 0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px red; } 100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px red; } }
 
-.pet-visual.aura-stars::after {
-    content: '✨';
-    position: absolute;
-    font-size: 8px;
-    animation: aura-stars 2s infinite;
-}
-@keyframes aura-stars {
-    0% { transform: translate(-10px, -10px) opacity(0); }
-    50% { opacity: 1; }
-    100% { transform: translate(10px, -20px) opacity(0); }
-}
+.pet-visual.aura-stars::after { content: '✨'; position: absolute; font-size: 8px; animation: aura-stars 2s infinite; }
+@keyframes aura-stars { 0% { transform: translate(-10px, -10px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(10px, -20px); opacity: 0; } }
 
 /* Tooltip & Speech */
 .dna-pet-tooltip {
