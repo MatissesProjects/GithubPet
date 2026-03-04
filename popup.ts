@@ -1,8 +1,24 @@
 async function getCurrentUser(): Promise<string | null> {
-    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab && tab.url && tab.url.includes('github.com')) {
-        const parts = new URL(tab.url).pathname.split('/');
-        return parts[1]; // First part after / is the username
+    const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
+    const tab = tabs[0];
+    
+    if (tab && tab.url) {
+        try {
+            const url = new URL(tab.url);
+            if (url.hostname === 'github.com') {
+                const parts = url.pathname.split('/').filter(p => p.length > 0);
+                if (parts.length > 0) {
+                    const firstPart = parts[0];
+                    // Skip reserved keywords
+                    const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending'];
+                    if (!reserved.includes(firstPart)) {
+                        return firstPart;
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to parse URL", e);
+        }
     }
     return null;
 }
@@ -20,7 +36,8 @@ async function updateUI(): Promise<void> {
         return;
     }
 
-    const { blacklist = [] } = await (chrome.storage.local.get('blacklist') as Promise<{ blacklist?: string[] }>);
+    toggleBtn.disabled = false;
+    const { blacklist = [] } = await (chrome.storage.local.get('blacklist') as any);
     const isBlacklisted = blacklist.includes(user);
 
     statusEl.textContent = isBlacklisted ? `Disabled for ${user}` : `Enabled for ${user}`;

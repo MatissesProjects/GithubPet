@@ -3,7 +3,7 @@
   "name": "GitHub DNA Pet",
   "version": "1.0",
   "description": "Procedural pets born from your GitHub commit signature.",
-  "permissions": ["storage"],
+  "permissions": ["storage", "tabs"],
   "action": {
     "default_popup": "popup.html"
   },
