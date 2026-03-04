@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>GitHub DNA Pet Test Harness</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <h1>Testing DNA Extraction</h1>
+    
+    <!-- Mocking the third-party signature element -->
+    <div id="gh-pulse-signature">
+        <span class="gh-sig-char">F</span>
+        <span class="gh-sig-char">E</span>
+        <span class="gh-sig-char">A</span>
+        <span class="gh-sig-char">B</span>
+        <span class="gh-sig-char">1</span>
+        <span class="gh-sig-char">2</span>
+        <span class="gh-sig-char">3</span>
+        <span class="gh-sig-char">4</span>
+    </div>
+
+    <!-- Mocking the contribution graph -->
+    <div class="js-calendar-graph" style="margin: 50px; width: 600px; height: 100px; background: #eee; position: relative;">
+        <svg width="600" height="100">
+            <!-- Simple grid of rects -->
+            <rect class="ContributionCalendar-day" x="10" y="10" width="10" height="10" fill="#ebedf0"></rect>
+            <rect class="ContributionCalendar-day" x="25" y="10" width="10" height="10" fill="#9be9a8"></rect>
+            <rect class="ContributionCalendar-day" x="40" y="10" width="10" height="10" fill="#40c463"></rect>
+            <rect class="ContributionCalendar-day" x="10" y="25" width="10" height="10" fill="#30a14e"></rect>
+            <rect class="ContributionCalendar-day" x="25" y="25" width="10" height="10" fill="#216e39"></rect>
+            <!-- Add more as needed -->
+        </svg>
+    </div>
+
+    <script src="content.js"></script>
+    <script>
+        console.log("--- Test Harness Loaded ---");
+        // The script should auto-run due to MutationObserver
+        // Let's manually trigger it too if it was already there
+        const sig = document.getElementById('gh-pulse-signature');
+        if (sig) {
+            console.log("Manually triggering initEngine for test...");
+            initEngine(sig);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+{
+  "manifest_version": 3,
+  "name": "GitHub DNA Pet",
+  "version": "1.0",
+  "description": "Procedural pets born from your GitHub commit signature.",
+  "content_scripts": [
+    {
+      "matches": ["*://github.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"]
+    }
+  ]
+}
