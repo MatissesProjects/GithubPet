@@ -83,7 +83,14 @@ function spawnPet(petState) {
     });
     
     // Tooltip for stats
-    pet.title = `Pet Type: ${petState.body}\nMutations: ${petState.mutations.join(', ') || 'None'}`;
+    const tooltip = document.createElement('div');
+    tooltip.className = 'dna-pet-tooltip';
+    tooltip.innerHTML = `
+        <strong>DNA Pet</strong><br>
+        Type: ${petState.body}<br>
+        Mutations: ${petState.mutations.join(', ') || 'None'}
+    `;
+    pet.appendChild(tooltip);
 
     graphContainer.style.position = 'relative'; // Ensure container is relative
     graphContainer.appendChild(pet);

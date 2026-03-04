@@ -17,8 +17,8 @@
 - [x] Inject the generated pet into the `.js-calendar-graph` container.
 - [x] Map the coordinates (`x`, `y` attributes) of `rect.ContributionCalendar-day` elements.
 - [x] Build a `setInterval` or `requestAnimationFrame` patrol loop.
-- [ ] Add basic collision/arrival logic so the pet stops on a square.
-- [ ] Add an interaction state (e.g., hover over the pet to see its stat block/mutation history).
+- [x] Add basic collision/arrival logic so the pet stops on a square.
+- [x] Add an interaction state (e.g., hover over the pet to see its stat block/mutation history).
 
 ### Track 4: Polishing & Portability
 - [ ] Add a popup toggle (`popup.html`) to disable the pet on certain profiles.
