@@ -42,40 +42,66 @@ function spawnPet(petState: PetState): void {
     `;
     pet.appendChild(tooltip);
 
-    graphContainer.style.position = 'relative'; // Ensure container is relative
+    // Speech Bubble
+    const speech = document.createElement('div');
+    speech.id = 'pet-speech';
+    speech.style.cssText = "position:absolute; bottom:120%; left:50%; transform:translateX(-50%); background:white; color:black; border:1px solid #ccc; padding:2px 6px; border-radius:10px; font-size:10px; white-space:nowrap; display:none; pointer-events:none; z-index:1002;";
+    pet.appendChild(speech);
+
+    graphContainer.style.position = 'relative'; 
     graphContainer.appendChild(pet);
-    
-    console.log("Pet spawned in graph!", petState);
     
     startPatrol(pet);
 }
 
 function startPatrol(petElement: HTMLElement): void {
-    const days = document.querySelectorAll('rect.ContributionCalendar-day');
-    if (days.length === 0) return;
+    // Search for any rects in the graph
+    const days = document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day');
+    if (days.length === 0) {
+        console.warn("No contribution days found for patrol.");
+        return;
+    }
+
+    const phrases = ["*happy chirps*", "Found a commit!", "Nom nom...", "Zzz...", "Exploring!", "Looking for bugs..."];
 
     function moveToRandomDay() {
-        const randomDay = days[Math.floor(Math.random() * days.length)] as SVGRectElement;
+        const randomDay = days[Math.floor(Math.random() * days.length)] as HTMLElement;
         const rect = randomDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
         const x = rect.left - containerRect.left + (rect.width / 2) - 10;
         const y = rect.top - containerRect.top + (rect.height / 2) - 10;
 
+        // Toggle movement state for animation
+        petElement.classList.add('is-moving');
         petElement.style.left = `${x}px`;
         petElement.style.top = `${y}px`;
+
+        // Personality: maybe say something
+        if (Math.random() > 0.7) {
+            const speech = petElement.querySelector('#pet-speech') as HTMLElement;
+            if (speech) {
+                speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+                speech.style.display = 'block';
+                setTimeout(() => speech.style.display = 'none', 2000);
+            }
+        }
+
+        setTimeout(() => {
+            petElement.classList.remove('is-moving');
+        }, 1000); // Match CSS transition duration
     }
 
     // Initial move
     moveToRandomDay();
     
     // Patrol interval
-    setInterval(moveToRandomDay, 3000);
+    setInterval(moveToRandomDay, 5000);
 }
 
 async function initEngine(containerElement: HTMLElement): Promise<void> {
     const username = window.location.pathname.split('/')[1];
-    const { blacklist = [] } = await chrome.storage.local.get('blacklist');
+    const { blacklist = [] } = await (chrome.storage.local.get('blacklist') as any);
     
     if (blacklist.includes(username)) {
         console.log(`Pet disabled for user: ${username}`);
@@ -83,9 +109,7 @@ async function initEngine(containerElement: HTMLElement): Promise<void> {
     }
 
     const signature = extractSignatureString(containerElement);
-    console.log("Extracted DNA:", signature);
     const petState = generateProceduralPet(signature);
-    console.log("Calculated Pet State:", petState);
     spawnPet(petState);
 }
 
