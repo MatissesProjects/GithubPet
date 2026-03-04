@@ -49,22 +49,33 @@ function spawnPet(petState: PetState): void {
     const visual = document.createElement('div');
     visual.className = `pet-visual body-${petState.body}`;
     visual.style.setProperty('--pet-color', petState.color);
-    visual.style.color = petState.color; // For inherit cases
     
     if (petState.aura !== 'none') {
         visual.classList.add(`aura-${petState.aura}`);
     }
+
+    // Mutations Slot
     petState.mutations.forEach(mut => {
-        visual.classList.add(`mut-${mut}`);
+        const mutEl = document.createElement('div');
+        mutEl.className = `pet-mutation mut-${mut}`;
+        visual.appendChild(mutEl);
     });
+
+    // Accessory Slot
     if (petState.accessory !== 'none') {
-        visual.classList.add(`acc-${petState.accessory}`);
+        const accEl = document.createElement('div');
+        accEl.className = `pet-accessory acc-${petState.accessory}`;
+        visual.appendChild(accEl);
     }
 
-    // Eyes
+    // Eyes & Face
+    const face = document.createElement('div');
+    face.className = 'pet-face';
     const eyes = document.createElement('div');
     eyes.className = 'pet-eyes';
-    visual.appendChild(eyes);
+    face.appendChild(eyes);
+    visual.appendChild(face);
+
     container.appendChild(visual);
     
     const tooltip = document.createElement('div');
@@ -170,7 +181,6 @@ async function initEngine(sigElement: HTMLElement): Promise<void> {
     spawnPet(generateProceduralPet(signature));
 }
 
-// Watch for storage changes to toggle pet immediately
 chrome.storage.onChanged.addListener((changes) => {
     if (changes.blacklist) {
         const sigElement = document.getElementById('gh-pulse-signature');
