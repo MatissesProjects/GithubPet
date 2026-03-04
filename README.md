@@ -4,6 +4,10 @@ A Chrome extension that brings your GitHub contribution graph to life with proce
 
 ![Pet Exploring Example](exploringPetExample.png)
 
+<video width="640" height="480" controls>
+  <source src="exampleVideo.mp4" type="video/mp4">
+</video>
+
 ## 🌟 The Concept
 
 Your GitHub commit history is your pet's DNA. This extension reads a hex signature from your profile (provided by `gh-pulse-signature`) and uses it as a seed for a procedural generation engine. 
