@@ -21,5 +21,5 @@
 - [x] Add an interaction state (e.g., hover over the pet to see its stat block/mutation history).
 
 ### Track 4: Polishing & Portability
-- [ ] Add a popup toggle (`popup.html`) to disable the pet on certain profiles.
-- [ ] Refactor the core engine into a pure JS module so the procedural generation logic can be easily lifted into an external web app or stream widget later.
+- [x] Add a popup toggle (`popup.html`) to disable the pet on certain profiles.
+- [x] Refactor the core engine into a pure JS module so the procedural generation logic can be easily lifted into an external web app or stream widget later.

@@ -3,10 +3,14 @@
   "name": "GitHub DNA Pet",
   "version": "1.0",
   "description": "Procedural pets born from your GitHub commit signature.",
+  "permissions": ["storage"],
+  "action": {
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": ["*://github.com/*"],
-      "js": ["content.js"],
+      "js": ["engine.js", "content.js"],
       "css": ["style.css"]
     }
   ]

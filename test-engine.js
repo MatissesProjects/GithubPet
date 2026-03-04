@@ -1,11 +1,5 @@
 // Mocking DOM elements for testing logic
-const fs = require('fs');
-const contentFile = fs.readFileSync('content.js', 'utf8');
-
-// Isolating functions for testing
-// We skip the MutationObserver part
-const engineCode = contentFile.split('// --- 3. EXTRACTION & OBSERVER ---')[0];
-eval(engineCode);
+const { generateProceduralPet } = require('./engine.js');
 
 // Test Cases
 const signatures = [
