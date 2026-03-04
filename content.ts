@@ -109,7 +109,6 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(visual);
     
     const idParts = petId.split('-');
-    // Format: username-year-month
     const month = idParts[2] || "???";
     const year = idParts[1] || "???";
     const label = `${month} ${year}`;
@@ -219,15 +218,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
-    // REPAIR: Aggressively purge malformed or legacy entries
-    for (const id in petCollection) {
-        const parts = id.split('-');
-        if (parts.length < 3 || id.includes('undefined')) {
-            delete petCollection[id];
-            collectionChanged = true;
-        }
-    }
-
     const monthlySigs: Record<string, { sig: string, year: string }> = {};
     const offset = pastAndToday.length - sigChars.length;
     
@@ -244,7 +234,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
             const yearStr = year.toString();
             const key = `${monthName}-${yearStr}`;
             
-            // CUMULATIVE DNA: Use the signature up to THIS point in the year
             monthlySigs[key] = { 
                 sig: sigChars.slice(0, i + 1).join(''), 
                 year: yearStr 
@@ -278,16 +267,13 @@ async function trySpawnCollection() {
     if (!isContextValid()) return;
     if (isInitializing) return;
     
-    const sigElement = document.getElementById('gh-pulse-signature');
-    const graphContainer = document.querySelector('.js-calendar-graph');
-    if (!graphContainer) return;
-
     const username = getActiveUsername();
     const viewedYear = getCurrentViewedYear();
     if (!username) return;
 
     chrome.storage.local.set({ viewedYear });
 
+    const sigElement = document.getElementById('gh-pulse-signature');
     if (sigElement) {
         const sigChars = extractSignatureChars(sigElement);
         if (sigChars.length >= 4) await syncMonthlyPets(username, sigChars);
@@ -296,13 +282,25 @@ async function trySpawnCollection() {
     isInitializing = true;
     try {
         const result = await chrome.storage.local.get(['petCollection']);
-        const collection = result.petCollection || {};
+        let collection = result.petCollection || {};
+        let collectionRepaired = false;
+
+        // AGGRESSIVE REPAIR: Purge any 'undefined' or malformed entries from storage
+        for (const id in collection) {
+            if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
+                delete collection[id];
+                collectionRepaired = true;
+            }
+        }
+        if (collectionRepaired) {
+            await chrome.storage.local.set({ petCollection: collection });
+        }
         
-        // 1. Purge DOM of pets that shouldn't be here
+        // 1. Purge DOM of pets that shouldn't be here (including malformed ones)
         const existingPets = document.querySelectorAll('.dna-pet');
         existingPets.forEach(el => {
             const id = el.id.replace('pet-', '');
-            if (!collection[id] || !collection[id].enabled || collection[id].year !== viewedYear || collection[id].username !== username) {
+            if (id.includes('undefined') || !collection[id] || !collection[id].enabled || collection[id].year !== viewedYear || collection[id].username !== username) {
                 el.remove();
             }
         });
