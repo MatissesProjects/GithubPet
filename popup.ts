@@ -29,20 +29,22 @@ async function renderCollection() {
         return;
     }
 
-    const { petCollection = {} } = await (chrome.storage.local.get('petCollection') as any);
+    const { petCollection = {}, viewedYear = "" } = await (chrome.storage.local.get(['petCollection', 'viewedYear']) as any);
     
-    // Filter for current user
+    // Filter for current user AND viewed year
     const userPets = Object.entries(petCollection)
-        .filter(([_, data]: [string, any]) => data.username === user)
+        .filter(([_, data]: [string, any]) => {
+            return data.username === user && (!viewedYear || data.year === viewedYear);
+        })
         .sort((a, b) => (b[1] as any).year.localeCompare((a[1] as any).year));
 
     if (userPets.length === 0) {
-        statusEl.textContent = `No pets found for ${user} yet. Load a contribution graph!`;
+        statusEl.textContent = `No pets found for ${user} in ${viewedYear || 'this year'}. Load a graph!`;
         container.innerHTML = '';
         return;
     }
 
-    statusEl.textContent = `Pets for ${user}:`;
+    statusEl.textContent = `Pets for ${user} (${viewedYear}):`;
     container.innerHTML = '';
 
     userPets.forEach(([id, data]) => {
@@ -52,7 +54,7 @@ async function renderCollection() {
         item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #30363d; font-size:12px;";
         
         item.innerHTML = `
-            <span><strong>${petData.month} ${petData.year}</strong></span>
+            <span><strong>${petData.month}</strong></span>
             <button id="toggle-${id}" style="padding:4px 8px; cursor:pointer; background:#21262d; color:#c9d1d9; border:1px solid #30363d; border-radius:4px;">
                 ${petData.enabled ? 'Disable' : 'Enable'}
             </button>
@@ -69,7 +71,6 @@ async function renderCollection() {
     });
 }
 
-// Add a "Reset" button for debugging if needed
 document.addEventListener('DOMContentLoaded', () => {
     const header = document.querySelector('h3');
     if (header) {

@@ -251,6 +251,9 @@ async function trySpawnCollection() {
     const viewedYear = getCurrentViewedYear();
     if (!username) return;
 
+    // Save viewed year for popup filtering
+    chrome.storage.local.set({ viewedYear });
+
     if (sigElement) {
         const sigChars = extractSignatureChars(sigElement);
         if (sigChars.length >= 4) await syncMonthlyPets(username, sigChars);
