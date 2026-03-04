@@ -30,3 +30,4 @@
 - [x] Migrate `content.js` and `popup.js` to TS.
 - [x] Set up a build/bundle step (e.g., `esbuild` or `tsc`) to output JS for the extension.
 - [x] Implement unit tests (using `jest` or similar since Bun is unavailable).
+- [x] Make `dist/` a self-contained extension folder (bundled scripts + assets).
