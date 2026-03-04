@@ -1,4 +1,4 @@
-import { generateProceduralPet } from '../engine';
+import { generateProceduralPet, PET_PARTS } from '../engine';
 
 describe('Procedural Engine', () => {
     test('should generate consistent pet for same seed', () => {
@@ -9,14 +9,6 @@ describe('Procedural Engine', () => {
     });
 
     test('should handle genesis block (last 4 chars)', () => {
-        const sig1 = "00001111";
-        const sig2 = "FFFF1111";
-        const pet1 = generateProceduralPet(sig1);
-        const pet2 = generateProceduralPet(sig2);
-        
-        // Since evolution logic depends on seed too, they might differ, 
-        // but the base pick from genesis 1111 should be same if evolution chain was empty.
-        // Let's test empty evolution chain.
         const p1 = generateProceduralPet("1111");
         const p2 = generateProceduralPet("1111");
         expect(p1).toEqual(p2);
@@ -24,15 +16,46 @@ describe('Procedural Engine', () => {
 
     test('should apply mutations for high commit levels (>= 13 / D)', () => {
         const base = "1234";
-        const highCommit = "D" + base; // D = 13
+        const highCommit = "D" + base; 
         const lowCommit = "1" + base;
 
         const petHigh = generateProceduralPet(highCommit);
         const petLow = generateProceduralPet(lowCommit);
 
-        // High commit should likely have a mutation (probabilistic but D triggers the check)
-        // In our code: if (commitLevel >= 13) { ... }
-        // We expect mutations array to be different if seed/index allows
         expect(petHigh.mutations.length).toBeGreaterThanOrEqual(petLow.mutations.length);
+    });
+
+    test('should apply accessories for level 10 (A) commits', () => {
+        const base = "1234";
+        const accSig = "A" + base; // A = 10
+        const noAccSig = "1" + base;
+
+        const petAcc = generateProceduralPet(accSig);
+        const petNoAcc = generateProceduralPet(noAccSig);
+
+        // A level 10 commit should trigger an accessory check
+        // It might still pick 'none', but we can check if it's within the valid parts
+        expect(PET_PARTS.accessories).toContain(petAcc.accessory);
+        expect(petNoAcc.accessory).toBe('none');
+    });
+
+    test('should pick valid body and color', () => {
+        const pet = generateProceduralPet("DEADBEEF");
+        expect(PET_PARTS.bodies).toContain(pet.body);
+        expect(PET_PARTS.colors).toContain(pet.color);
+    });
+
+    test('should handle very long evolution chains', () => {
+        const longSig = "F".repeat(100) + "1234";
+        const pet = generateProceduralPet(longSig);
+        expect(pet.mutations.length).toBeGreaterThan(0);
+        expect(pet.body).toBeDefined();
+    });
+
+    test('should handle minimal signature', () => {
+        const minimal = "1234";
+        const pet = generateProceduralPet(minimal);
+        expect(pet.mutations).toHaveLength(0);
+        expect(pet.accessory).toBe('none');
     });
 });
