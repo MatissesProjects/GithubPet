@@ -52,7 +52,7 @@ async function renderCollection() {
         item.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px; border-bottom:1px solid #30363d; font-size:12px;";
         
         item.innerHTML = `
-            <span>Year: <strong>${petData.year}</strong></span>
+            <span><strong>${petData.month} ${petData.year}</strong></span>
             <button id="toggle-${id}" style="padding:4px 8px; cursor:pointer; background:#21262d; color:#c9d1d9; border:1px solid #30363d; border-radius:4px;">
                 ${petData.enabled ? 'Disable' : 'Enable'}
             </button>

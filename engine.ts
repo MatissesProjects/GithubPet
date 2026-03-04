@@ -16,6 +16,7 @@ export interface CollectionPet {
     signature: string;
     username: string;
     year: string;
+    month: string;
     enabled: boolean;
     addedAt: number;
 }

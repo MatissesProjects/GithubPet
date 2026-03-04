@@ -7,11 +7,9 @@ function isContextValid(): boolean {
     return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
 }
 
-function extractSignatureString(containerElement: HTMLElement): string {
+function extractSignatureChars(containerElement: HTMLElement): string[] {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
-    let hexString = '';
-    charSpans.forEach(span => hexString += span.textContent?.trim() || '');
-    return hexString;
+    return Array.from(charSpans).map(span => span.textContent?.trim() || '');
 }
 
 function forceOverflowVisible(element: HTMLElement): void {
@@ -29,9 +27,7 @@ function getActiveUsername(): string | null {
     if (parts.length > 0) {
         const firstPart = parts[0];
         const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending', 'account'];
-        if (!reserved.includes(firstPart)) {
-            return firstPart;
-        }
+        if (!reserved.includes(firstPart)) return firstPart;
     }
     return null;
 }
@@ -43,15 +39,6 @@ function getCurrentYear(): string {
         if (match) return match[0];
     }
     return new Date().getFullYear().toString();
-}
-
-function getL2Threshold(): number {
-    const threshEl = document.querySelector('.gh-thresh-3');
-    if (threshEl && threshEl.textContent) {
-        const match = threshEl.textContent.match(/L2:\s*(\d+)/i);
-        if (match) return parseInt(match[1], 10);
-    }
-    return 2;
 }
 
 function getCommitCount(day: HTMLElement): number {
@@ -68,7 +55,6 @@ function spawnPet(petState: PetState, petId: string): void {
     const graphContainer = document.querySelector('.js-calendar-graph') as HTMLElement;
     if (!graphContainer) return;
 
-    // Check if THIS specific pet already exists
     if (document.getElementById(`pet-${petId}`)) return;
 
     const container = document.createElement('div');
@@ -103,9 +89,12 @@ function spawnPet(petState: PetState, petId: string): void {
     visual.appendChild(face);
     container.appendChild(visual);
     
+    const idParts = petId.split('-');
+    const label = idParts.length >= 3 ? `${idParts[2]} ${idParts[1]}` : petId;
+    
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
-    tooltip.innerHTML = `<strong>DNA Pet (${petId.split('-').pop()})</strong><br>Type: ${petState.body}<br>${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}Mutations: ${petState.mutations.join(', ') || 'None'}`;
+    tooltip.innerHTML = `<strong>DNA Pet (${label})</strong><br>Type: ${petState.body}<br>${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}Mutations: ${petState.mutations.join(', ') || 'None'}`;
     container.appendChild(tooltip);
 
     const speech = document.createElement('div');
@@ -183,24 +172,56 @@ function startPatrol(petElement: HTMLElement): void {
     const interval = setInterval(() => {
         if (!document.body.contains(petElement)) { clearInterval(interval); return; }
         moveToRandomDay();
-    }, 4000 + Math.random() * 2000); // Varied patrol timing
+    }, 4000 + Math.random() * 2000);
 }
 
-async function syncPetCollection(username: string, year: string, signature: string) {
+async function syncMonthlyPets(username: string, year: string, sigChars: string[]) {
     if (!isContextValid()) return;
-    const petId = `${username}-${year}`;
-    const result = await chrome.storage.local.get(['petCollection']);
-    const collection = result.petCollection || {};
+    
+    // Find all days in the graph to map chars to months
+    const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
+    if (allDays.length === 0 || sigChars.length === 0) return;
 
-    if (!collection[petId] || collection[petId].signature !== signature) {
-        collection[petId] = {
-            signature,
-            username,
-            year,
-            enabled: true,
-            addedAt: Date.now()
-        };
-        await chrome.storage.local.set({ petCollection: collection });
+    const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
+    let collectionChanged = false;
+
+    // Group characters by month
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthlySigs: Record<string, string> = {};
+
+    // The signature usually maps 1:1 to the days currently loaded in the graph
+    // We iterate through days and pick the corresponding char from the start
+    for (let i = 0; i < Math.min(allDays.length, sigChars.length); i++) {
+        const dateStr = allDays[i].getAttribute('data-date');
+        if (dateStr) {
+            const date = new Date(dateStr);
+            const monthName = monthNames[date.getMonth()];
+            if (!monthlySigs[monthName]) monthlySigs[monthName] = "";
+            monthlySigs[monthName] += sigChars[i];
+        }
+    }
+
+    // Register a pet for each month found
+    for (const month in monthlySigs) {
+        const monthSig = monthlySigs[month];
+        if (monthSig.length < 4) continue; // Need at least 4 chars for genesis
+
+        const petId = `${username}-${year}-${month}`;
+        if (!petCollection[petId] || petCollection[petId].signature !== monthSig) {
+            petCollection[petId] = {
+                signature: monthSig,
+                username,
+                year,
+                month,
+                enabled: true,
+                addedAt: Date.now()
+            };
+            collectionChanged = true;
+        }
+    }
+
+    if (collectionChanged) {
+        await chrome.storage.local.set({ petCollection });
     }
 }
 
@@ -215,11 +236,10 @@ async function trySpawnCollection() {
     const username = getActiveUsername();
     if (!username) return;
 
-    // 1. Register current year pet if signature is visible
     if (sigElement) {
-        const signature = extractSignatureString(sigElement);
-        if (signature.length >= 4) {
-            await syncPetCollection(username, getCurrentYear(), signature);
+        const sigChars = extractSignatureChars(sigElement);
+        if (sigChars.length >= 4) {
+            await syncMonthlyPets(username, getCurrentYear(), sigChars);
         }
     }
 
@@ -228,7 +248,6 @@ async function trySpawnCollection() {
         const result = await chrome.storage.local.get(['petCollection']);
         const collection = result.petCollection || {};
         
-        // 2. Clear pets that should no longer be here (e.g. navigation or disabled)
         const petElements = document.querySelectorAll('.dna-pet');
         petElements.forEach(el => {
             const id = el.id.replace('pet-', '');
@@ -237,7 +256,6 @@ async function trySpawnCollection() {
             }
         });
 
-        // 3. Spawn all enabled pets for this user
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
             if (petData.username === username && petData.enabled) {
@@ -253,10 +271,8 @@ if (isContextValid()) {
     chrome.storage.onChanged.addListener((changes) => {
         if (changes.petCollection) trySpawnCollection();
     });
-
     const observer = new MutationObserver(() => trySpawnCollection());
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-
     setInterval(trySpawnCollection, 2000);
     trySpawnCollection();
 }
