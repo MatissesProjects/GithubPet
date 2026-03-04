@@ -40,9 +40,16 @@ function spawnPet(petState: PetState): void {
     container.id = 'dna-pet-instance';
     container.className = `dna-pet`;
 
+    // Shadow
+    const shadow = document.createElement('div');
+    shadow.className = 'pet-shadow';
+    container.appendChild(shadow);
+
+    // Visual Body
     const visual = document.createElement('div');
     visual.className = `pet-visual body-${petState.body}`;
-    visual.style.backgroundColor = petState.color;
+    visual.style.setProperty('--pet-color', petState.color);
+    visual.style.color = petState.color; // For inherit cases
     
     if (petState.aura !== 'none') {
         visual.classList.add(`aura-${petState.aura}`);
@@ -50,7 +57,11 @@ function spawnPet(petState: PetState): void {
     petState.mutations.forEach(mut => {
         visual.classList.add(`mut-${mut}`);
     });
+    if (petState.accessory !== 'none') {
+        visual.classList.add(`acc-${petState.accessory}`);
+    }
 
+    // Eyes
     const eyes = document.createElement('div');
     eyes.className = 'pet-eyes';
     visual.appendChild(eyes);
@@ -58,12 +69,17 @@ function spawnPet(petState: PetState): void {
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
-    tooltip.innerHTML = `<strong>DNA Pet</strong><br>Type: ${petState.body}<br>Mutations: ${petState.mutations.join(', ') || 'None'}`;
+    tooltip.innerHTML = `
+        <strong>DNA Pet</strong><br>
+        Type: ${petState.body}<br>
+        ${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}
+        Mutations: ${petState.mutations.join(', ') || 'None'}
+    `;
     container.appendChild(tooltip);
 
     const speech = document.createElement('div');
     speech.id = 'pet-speech';
-    speech.style.cssText = "position:absolute; bottom:120%; left:50%; transform:translateX(-50%); background:#0d1117; color:#c9d1d9; border:1px solid #30363d; padding:4px 8px; border-radius:10px; font-size:10px; white-space:nowrap; display:none; pointer-events:none; z-index:100000001; box-shadow: 0 4px 12px rgba(0,0,0,0.5);";
+    speech.style.cssText = "position:absolute; bottom:140%; left:50%; transform:translateX(-50%); background:#0d1117; color:#c9d1d9; border:1px solid #30363d; padding:4px 8px; border-radius:10px; font-size:10px; white-space:nowrap; display:none; pointer-events:none; z-index:100000001; box-shadow: 0 4px 12px rgba(0,0,0,0.5);";
     container.appendChild(speech);
 
     graphContainer.style.position = 'relative'; 
@@ -95,8 +111,8 @@ function startPatrol(petElement: HTMLElement): void {
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
         petElement.classList.add('is-moving');
-        petElement.style.left = `${rect.left - containerRect.left + (rect.width / 2) - 10}px`;
-        petElement.style.top = `${rect.top - containerRect.top + (rect.height / 2) - 10}px`;
+        petElement.style.left = `${rect.left - containerRect.left + (rect.width / 2) - 12}px`; // Center of 24px
+        petElement.style.top = `${rect.top - containerRect.top + (rect.height / 2) - 12}px`;
 
         if (Math.random() > 0.8) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;

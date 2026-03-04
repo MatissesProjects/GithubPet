@@ -2,12 +2,14 @@
 export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider';
 export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow';
 export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes';
+export type PetAccessory = 'none' | 'hat' | 'scarf' | 'glasses';
 
 export interface PetState {
     body: PetBody;
     color: string;
     aura: PetAura;
     mutations: PetMutation[];
+    accessory: PetAccessory;
 }
 
 export interface PetParts {
@@ -15,6 +17,7 @@ export interface PetParts {
     colors: string[];
     auras: PetAura[];
     mutations: PetMutation[];
+    accessories: PetAccessory[];
 }
 
 // --- 2. SEEDED PRNG ---
@@ -34,9 +37,10 @@ export function pickRandom<T>(array: T[], randomFunc: () => number): T {
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
     bodies: ['slime', 'cube', 'wisp', 'mecha-spider'],
-    colors: ['#FF0055', '#00FFCC', '#FFDD00', '#B000FF'],
+    colors: ['#FF0055', '#00FFCC', '#FFDD00', '#B000FF', '#FF5500', '#55FF00'],
     auras: ['none', 'fire', 'digital-glitch', 'shadow'],
-    mutations: ['horns', 'halo', 'bat-wings', 'spikes']
+    mutations: ['horns', 'halo', 'bat-wings', 'spikes'],
+    accessories: ['none', 'hat', 'scarf', 'glasses']
 };
 
 export function generateProceduralPet(hexString: string): PetState {
@@ -48,22 +52,28 @@ export function generateProceduralPet(hexString: string): PetState {
         body: pickRandom(PET_PARTS.bodies, rng),
         color: pickRandom(PET_PARTS.colors, rng),
         aura: 'none',
-        mutations: []
+        mutations: [],
+        accessory: 'none'
     };
 
     const evolutionChain = hexString.slice(0, -4);
     
-    // Read right-to-left (oldest to newest)
+    // Read right-to-left
     for (let i = evolutionChain.length - 1; i >= 0; i--) {
         const commitLevel = parseInt(evolutionChain[i], 16); 
         
-        // High commit day = Mutation Event
         if (commitLevel >= 13) {
             const mutationRng = seededRandom(seed + i + commitLevel);
             const newMutation = pickRandom(PET_PARTS.mutations, mutationRng);
             if (!petVisuals.mutations.includes(newMutation)) {
                 petVisuals.mutations.push(newMutation);
             }
+        }
+
+        // Accessories based on specific patterns in the chain
+        if (commitLevel === 10 && petVisuals.accessory === 'none') {
+            const accRng = seededRandom(seed * i);
+            petVisuals.accessory = pickRandom(PET_PARTS.accessories, accRng);
         }
     }
     return petVisuals;
