@@ -41,6 +41,16 @@ function getCurrentViewedYear(): string {
     return new Date().getFullYear().toString();
 }
 
+// Timezone-safe date parsing for YYYY-MM-DD
+function parseDateParts(dateStr: string) {
+    const parts = dateStr.split('-').map(Number);
+    return {
+        year: parts[0],
+        month: parts[1] - 1, // 0-indexed
+        day: parts[2]
+    };
+}
+
 function getCommitCount(day: HTMLElement): number {
     const label = day.getAttribute('aria-label');
     if (label) {
@@ -73,7 +83,6 @@ function spawnPet(petState: PetState, petId: string): void {
     
     if (petState.aura !== 'none') visual.classList.add(`aura-${petState.aura}`);
     
-    // Mecha-spider legs
     if (petState.body === 'mecha-spider') {
         for (let i = 1; i <= 4; i++) {
             const leg = document.createElement('div');
@@ -99,7 +108,6 @@ function spawnPet(petState: PetState, petId: string): void {
     eyes.className = 'pet-eyes';
     face.appendChild(eyes);
     visual.appendChild(face);
-
     container.appendChild(visual);
     
     const idParts = petId.split('-');
@@ -139,12 +147,17 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
         const futureLimit = new Date();
         futureLimit.setDate(now.getDate() + 4);
         
+        // Month specific pool - using safe parsing
         let patrolPool = allDays.filter(day => {
             const dateStr = day.getAttribute('data-date');
             if (!dateStr) return false;
-            const date = new Date(dateStr);
-            const isTargetMonth = monthNames[date.getMonth()] === targetMonth;
-            return isTargetMonth && date <= futureLimit;
+            
+            const { month, year } = parseDateParts(dateStr);
+            const isTargetMonth = monthNames[month] === targetMonth;
+            
+            // Limit to past and near future
+            const dateObj = new Date(dateStr);
+            return isTargetMonth && dateObj <= futureLimit;
         });
 
         if (patrolPool.length === 0) patrolPool = allDays;
@@ -216,9 +229,9 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
 
         const dateStr = pastAndToday[dayIndex].getAttribute('data-date');
         if (dateStr) {
-            const date = new Date(dateStr);
-            const monthName = monthNames[date.getMonth()];
-            const yearStr = date.getFullYear().toString();
+            const { month, year } = parseDateParts(dateStr);
+            const monthName = monthNames[month];
+            const yearStr = year.toString();
             const key = `${monthName}-${yearStr}`;
             
             if (!monthlySigs[key]) monthlySigs[key] = { sig: "", year: yearStr };
