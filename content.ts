@@ -76,11 +76,12 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(shadow);
 
     const visual = document.createElement('div');
-    visual.className = `pet-visual body-${petState.body}`;
+    visual.className = `pet-visual body-${petState.body} pat-${petState.pattern}`;
     visual.style.setProperty('--pet-color', petState.color);
     
     if (petState.aura !== 'none') visual.classList.add(`aura-${petState.aura}`);
     
+    // Mecha-spider legs
     if (petState.body === 'mecha-spider') {
         for (let i = 1; i <= 4; i++) {
             const leg = document.createElement('div');
@@ -115,7 +116,15 @@ function spawnPet(petState: PetState, petId: string): void {
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
-    tooltip.innerHTML = `<strong>DNA Pet (${label})</strong><br>Type: ${petState.body}<br>${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}Mutations: ${petState.mutations.join(', ') || 'None'}`;
+    tooltip.innerHTML = `
+        <strong>DNA Pet (${label})</strong><br>
+        Type: ${petState.body}<br>
+        Pattern: ${petState.pattern}<br>
+        Complexity: ${petState.complexity}/5<br>
+        ${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}
+        Aura: ${petState.aura}<br>
+        Mutations: ${petState.mutations.join(', ') || 'None'}
+    `;
     container.appendChild(tooltip);
 
     const speech = document.createElement('div');
@@ -218,7 +227,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
-    // Repair collection
     for (const id in petCollection) {
         if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
             delete petCollection[id];
@@ -250,9 +258,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     for (const key in monthlySigs) {
         const { sig, year } = monthlySigs[key];
         const monthName = key.split('-')[0];
-        
-        // UNIQUE IDENTITY: Each month uses its own segment.
-        // Stability is handled by padding in engine.ts (using first 4 chars as genesis).
         if (sig.length < 4) continue; 
 
         const petId = `${username}-${year}-${monthName}`;
