@@ -4,6 +4,7 @@ export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' 
 export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna' | 'shield' | 'sword' | 'magic-wand';
 export type PetAccessory = 'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape' | 'crown' | 'monocle' | 'headphones' | 'backpack';
 export type PetPattern = 'solid' | 'stripes' | 'dots' | 'gradient-shift' | 'circuit' | 'honeycomb' | 'star-field' | 'waves';
+export type PetPersonality = 'stoic' | 'energetic' | 'grumpy' | 'philosophical' | 'anxious' | 'proud';
 
 export interface PetState {
     body: PetBody;
@@ -13,6 +14,8 @@ export interface PetState {
     accessory: PetAccessory;
     pattern: PetPattern;
     complexity: number;
+    personality: PetPersonality;
+    title: string;
 }
 
 export interface PetParts {
@@ -62,6 +65,13 @@ export const PET_PARTS: PetParts = {
     patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit', 'honeycomb', 'star-field', 'waves']
 };
 
+const TITLES = {
+    prefixes: ["The Great", "The Ancient", "The Eternal", "The Cosmic", "The Glitched", "The Radiant", "The Shadowed", "The Pixelated"],
+    suffixes: ["Architect", "Voyager", "Sentinel", "Guardian", "Wanderer", "Herald", "Observer", "Anomaly"]
+};
+
+const PERSONALITIES: PetPersonality[] = ['stoic', 'energetic', 'grumpy', 'philosophical', 'anxious', 'proud'];
+
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
     let dna = hexString;
     while (dna.length < 4) dna += "0"; 
@@ -77,6 +87,10 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
     
     const complexity = Math.min(5, Math.floor(totalCommits / 15));
 
+    // Generate Title
+    const title = `${pickRandom(TITLES.prefixes, rng)} ${pickRandom(TITLES.suffixes, rng)}`;
+    const personality = pickRandom(PERSONALITIES, rng);
+
     let petVisuals: PetState = {
         body: pickRandom(PET_PARTS.bodies, rng),
         color: pickRandom(PET_PARTS.colors, rng),
@@ -84,7 +98,9 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         mutations: [],
         accessory: 'none',
         pattern: pickRandom(PET_PARTS.patterns, rng),
-        complexity
+        complexity,
+        personality,
+        title
     };
 
     for (let i = 0; i < evolutionChain.length; i++) {
