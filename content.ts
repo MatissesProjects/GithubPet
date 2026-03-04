@@ -102,7 +102,11 @@ function startPatrol(petElement: HTMLElement): void {
         return new Date(dateStr) <= futureLimit;
     });
 
-    const phrases = ["*happy chirps*", "Found a commit!", "Nom nom...", "Zzz...", "Exploring!", "Looking for bugs...", "Shiny squares!", "I like the green ones."];
+    const moodPhrases: Record<string, string[]> = {
+        scared: ["It's so empty here...", "Where are the commits?", "*shiver*", "So dark...", "I'm lonely..."],
+        happy: ["Found a commit!", "Shiny squares!", "Exploring!", "*happy chirps*", "Nom nom..."],
+        ecstatic: ["WOW! SO MANY COMMITS!", "This is the BEST square!", "POWER OVERWHELMING!", "*party noises*", "I love this day!"]
+    };
 
     function moveToRandomDay() {
         if (!petElement.parentElement) return;
@@ -110,13 +114,30 @@ function startPatrol(petElement: HTMLElement): void {
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
+        const level = parseInt(targetDay.getAttribute('data-level') || '0', 10);
+        
+        // Update Mood
+        petElement.classList.remove('mood-scared', 'mood-happy', 'mood-ecstatic');
+        let currentMood = 'happy';
+        if (level === 0) {
+            petElement.classList.add('mood-scared');
+            currentMood = 'scared';
+        } else if (level >= 3) {
+            petElement.classList.add('mood-ecstatic');
+            currentMood = 'ecstatic';
+        } else {
+            petElement.classList.add('mood-happy');
+            currentMood = 'happy';
+        }
+
         petElement.classList.add('is-moving');
-        petElement.style.left = `${rect.left - containerRect.left + (rect.width / 2) - 12}px`; // Center of 24px
+        petElement.style.left = `${rect.left - containerRect.left + (rect.width / 2) - 12}px`;
         petElement.style.top = `${rect.top - containerRect.top + (rect.height / 2) - 12}px`;
 
-        if (Math.random() > 0.8) {
+        if (Math.random() > 0.7) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;
             if (speech) {
+                const phrases = moodPhrases[currentMood];
                 speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
                 speech.style.display = 'block';
                 setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2500);
