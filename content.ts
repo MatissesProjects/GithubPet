@@ -25,7 +25,6 @@ function getActiveUsername(): string | null {
     const pathParts = window.location.pathname.split('/').filter(Boolean);
     if (pathParts.length > 0) {
         const first = pathParts[0];
-        // More comprehensive reserved list
         const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending', 'account', 'pulls', 'issues', 'codespaces'];
         if (!reserved.includes(first)) return first;
     }
@@ -110,8 +109,9 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(visual);
     
     const idParts = petId.split('-');
-    const month = idParts[2] || "Unknown";
-    const year = idParts[1] || "Unknown";
+    // Format: username-year-month
+    const month = idParts[2] || "???";
+    const year = idParts[1] || "???";
     const label = `${month} ${year}`;
     
     const tooltip = document.createElement('div');
@@ -155,7 +155,6 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
             return isTargetMonth && new Date(dateStr) <= futureLimit;
         });
 
-        // Fallback to all visible days if month pool is empty or malformed
         if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
@@ -198,7 +197,7 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
     const interval = setInterval(() => {
         if (!document.body.contains(petElement)) { clearInterval(interval); return; }
         moveToRandomDay();
-    }, 4000 + Math.random() * 2000);
+    }, 5000);
 }
 
 async function syncMonthlyPets(username: string, sigChars: string[]) {
@@ -220,9 +219,10 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
-    // REPAIR: Remove any 'undefined' entries
+    // REPAIR: Aggressively purge malformed or legacy entries
     for (const id in petCollection) {
-        if (id.includes('undefined')) {
+        const parts = id.split('-');
+        if (parts.length < 3 || id.includes('undefined')) {
             delete petCollection[id];
             collectionChanged = true;
         }
@@ -244,8 +244,11 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
             const yearStr = year.toString();
             const key = `${monthName}-${yearStr}`;
             
-            if (!monthlySigs[key]) monthlySigs[key] = { sig: "", year: yearStr };
-            monthlySigs[key].sig += sigChars[i];
+            // CUMULATIVE DNA: Use the signature up to THIS point in the year
+            monthlySigs[key] = { 
+                sig: sigChars.slice(0, i + 1).join(''), 
+                year: yearStr 
+            };
         }
     }
 
@@ -295,6 +298,7 @@ async function trySpawnCollection() {
         const result = await chrome.storage.local.get(['petCollection']);
         const collection = result.petCollection || {};
         
+        // 1. Purge DOM of pets that shouldn't be here
         const existingPets = document.querySelectorAll('.dna-pet');
         existingPets.forEach(el => {
             const id = el.id.replace('pet-', '');
@@ -303,6 +307,7 @@ async function trySpawnCollection() {
             }
         });
 
+        // 2. Spawn valid collection members
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
             if (petData.username === username && petData.enabled && petData.year === viewedYear) {
