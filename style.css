@@ -25,17 +25,11 @@
     position: absolute;
     width: 16px;
     height: 4px;
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.3);
     border-radius: 50%;
     bottom: -2px;
     left: 4px;
-    transition: transform 1s, opacity 1s;
     z-index: -1;
-}
-
-.dna-pet.is-moving .pet-shadow {
-    transform: scale(0.5);
-    opacity: 0.1;
 }
 
 .pet-visual {
@@ -44,7 +38,7 @@
     height: 100%;
     animation: pet-idle 3s infinite ease-in-out;
     transition: transform 0.3s, filter 0.3s;
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    background-color: var(--pet-color, #888); /* Fallback */
 }
 
 .dna-pet.is-moving .pet-visual {
@@ -52,11 +46,9 @@
 }
 
 /* --- MOODS --- */
-
-/* Scared Mood (Level 0) */
 .dna-pet.mood-scared .pet-visual {
     animation: pet-shiver 0.1s infinite;
-    filter: saturate(0.5) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    filter: saturate(0.5);
 }
 .dna-pet.mood-scared .pet-eyes::before, 
 .dna-pet.mood-scared .pet-eyes::after {
@@ -64,36 +56,32 @@
 }
 
 @keyframes pet-shiver {
-    0% { transform: translate(0, 0); }
+    0%, 100% { transform: translate(0, 0); }
     25% { transform: translate(1px, 1px); }
     50% { transform: translate(-1px, 0); }
     75% { transform: translate(1px, -1px); }
-    100% { transform: translate(0, 0); }
-}
-
-/* Happy Moods (Level 1-4) */
-.dna-pet.mood-happy .pet-visual {
-    animation: pet-idle 1.5s infinite ease-in-out; /* Faster bob */
 }
 
 .dna-pet.mood-ecstatic .pet-visual {
-    animation: pet-idle 0.8s infinite ease-in-out; /* Super fast bob */
-    filter: drop-shadow(0 0 8px var(--pet-color)) brightness(1.2);
+    animation: pet-idle 0.8s infinite ease-in-out;
+    /* Use sharp shadows instead of blur filters */
+    box-shadow: 0 0 0 2px var(--pet-color), 0 0 10px var(--pet-color);
+    filter: brightness(1.2);
 }
 .dna-pet.mood-ecstatic .pet-eyes::before, 
 .dna-pet.mood-ecstatic .pet-eyes::after {
     transform: scale(1.3);
 }
 
-/* Volumetric Gloss Effect */
+/* Volumetric Gloss */
 .pet-visual::before {
     content: '';
     position: absolute;
-    top: 15%;
-    left: 15%;
-    width: 30%;
-    height: 30%;
-    background: rgba(255, 255, 255, 0.4);
+    top: 10%;
+    left: 10%;
+    width: 35%;
+    height: 35%;
+    background: rgba(255, 255, 255, 0.5);
     border-radius: 50%;
     filter: blur(1px);
     z-index: 5;
@@ -114,12 +102,13 @@
 
 .pet-eyes::before, .pet-eyes::after {
     content: '';
-    width: 4px;
-    height: 4px;
+    width: 5px;
+    height: 5px;
     background: white;
     border-radius: 50%;
     animation: pet-blink 4s infinite;
     transition: transform 0.3s;
+    box-shadow: 0 0 2px rgba(0,0,0,0.5);
 }
 
 @keyframes pet-blink {
@@ -130,7 +119,7 @@
 /* Animations */
 @keyframes pet-idle {
     0%, 100% { transform: translateY(0) scale(1, 1); }
-    50% { transform: translateY(-2px) scale(1.02, 0.98); }
+    50% { transform: translateY(-3px) scale(1.02, 0.98); }
 }
 
 @keyframes pet-hop {
@@ -138,64 +127,67 @@
     50% { transform: translateY(-12px) scale(0.9, 1.1) rotate(5deg); }
 }
 
-/* Bodies with Gradients */
+/* Bodies */
 .pet-visual.body-slime {
     border-radius: 45% 45% 35% 35%;
-    background-image: radial-gradient(circle at 30% 30%, var(--pet-color), black);
+    background-image: radial-gradient(circle at 30% 30%, var(--pet-color), rgba(0,0,0,0.4));
 }
 
 .pet-visual.body-cube {
     border-radius: 6px;
-    background-image: linear-gradient(135deg, var(--pet-color), black);
+    background-image: linear-gradient(135deg, var(--pet-color), rgba(0,0,0,0.4));
 }
 
 .pet-visual.body-wisp {
     border-radius: 50%;
-    filter: blur(2px) brightness(1.5);
+    background-color: var(--pet-color);
+    filter: blur(3px) brightness(1.5);
     animation: wisp-flicker 1.5s infinite alternate;
+    box-shadow: 0 0 15px var(--pet-color);
 }
 
 .pet-visual.body-mecha-spider {
     clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
-    background-image: repeating-linear-gradient(45deg, var(--pet-color), black 10px);
+    background-image: repeating-linear-gradient(45deg, var(--pet-color), rgba(0,0,0,0.4) 5px);
 }
 
 /* Mutations */
 .pet-visual.mut-horns::after {
     content: '▼ ▼';
     position: absolute;
-    top: -8px;
+    top: -10px;
     left: 0;
     width: 100%;
     text-align: center;
-    font-size: 8px;
-    color: inherit;
-    filter: brightness(0.7);
+    font-size: 10px;
+    color: var(--pet-color);
+    filter: brightness(0.6);
+    z-index: -1;
 }
 
 .pet-visual.mut-halo {
-    box-shadow: 0 -10px 0 -3px rgba(255, 255, 255, 0.9), 0 0 10px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 -12px 0 -4px rgba(255, 255, 255, 0.9), 0 0 15px rgba(255, 255, 255, 0.4);
 }
 
-.pet-visual.mut-bat-wings::before {
+.pet-visual.mut-bat-wings::after {
     content: '🦇';
     position: absolute;
-    font-size: 20px;
+    font-size: 24px;
     left: 50%;
-    top: 50%;
+    top: 40%;
     transform: translate(-50%, -50%);
-    opacity: 0.5;
-    z-index: -1;
+    opacity: 0.6;
+    z-index: -2;
 }
 
 /* Accessories */
 .pet-visual.acc-hat::after {
     content: '';
     position: absolute;
-    top: -5px;
+    top: -6px;
     left: 10%;
     width: 80%;
-    height: 6px;
+    height: 8px;
     background: #e74c3c;
     border-radius: 4px 4px 0 0;
     z-index: 15;
@@ -203,22 +195,22 @@
 }
 
 .pet-visual.acc-scarf {
-    box-shadow: inset 0 -4px 0 #3498db;
+    box-shadow: inset 0 -5px 0 #3498db;
 }
 
 .pet-visual.acc-glasses::before {
     content: 'oo';
     position: absolute;
-    top: 25%;
+    top: 20%;
     left: 0;
     width: 100%;
     text-align: center;
     font-family: monospace;
     font-weight: bold;
-    color: #333;
-    font-size: 14px;
+    color: #111;
+    font-size: 16px;
     z-index: 20;
-    letter-spacing: 2px;
+    letter-spacing: 1px;
 }
 
 /* Tooltip & Speech */
@@ -239,7 +231,6 @@
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     font-size: 11px;
     border: 1px solid #30363d;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
 }
 
 .dna-pet:hover .dna-pet-tooltip {
