@@ -1,9 +1,9 @@
 // --- 1. TYPES ---
-export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider' | 'orb' | 'crystal';
-export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' | 'stars' | 'rain';
-export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna';
-export type PetAccessory = 'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape';
-export type PetPattern = 'solid' | 'stripes' | 'dots' | 'gradient-shift' | 'circuit';
+export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider' | 'orb' | 'crystal' | 'pyramid' | 'cloud';
+export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' | 'stars' | 'rain' | 'plasma' | 'leaves';
+export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna' | 'shield' | 'sword' | 'magic-wand';
+export type PetAccessory = 'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape' | 'crown' | 'monocle' | 'headphones' | 'backpack';
+export type PetPattern = 'solid' | 'stripes' | 'dots' | 'gradient-shift' | 'circuit' | 'honeycomb' | 'star-field' | 'waves';
 
 export interface PetState {
     body: PetBody;
@@ -12,7 +12,7 @@ export interface PetState {
     mutations: PetMutation[];
     accessory: PetAccessory;
     pattern: PetPattern;
-    complexity: number; // 0-5 based on commit volume
+    complexity: number;
 }
 
 export interface PetParts {
@@ -49,16 +49,17 @@ function hashString(str: string): number {
 
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
-    bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal'],
+    bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud'],
     colors: [
         '#FF0055', '#00FFCC', '#FFDD00', '#B000FF', 
         '#FF5500', '#55FF00', '#00AAFF', '#FF00FF',
-        '#FFFFFF', '#444444', '#FF9900', '#00FF00'
+        '#FFFFFF', '#444444', '#FF9900', '#00FF00',
+        '#E74C3C', '#3498DB', '#F1C40F', '#9B59B6'
     ],
-    auras: ['none', 'fire', 'digital-glitch', 'shadow', 'rainbow', 'stars', 'rain'],
-    mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna'],
-    accessories: ['none', 'hat', 'scarf', 'glasses', 'tie', 'cape'],
-    patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit']
+    auras: ['none', 'fire', 'digital-glitch', 'shadow', 'rainbow', 'stars', 'rain', 'plasma', 'leaves'],
+    mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna', 'shield', 'sword', 'magic-wand'],
+    accessories: ['none', 'hat', 'scarf', 'glasses', 'tie', 'cape', 'crown', 'monocle', 'headphones', 'backpack'],
+    patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit', 'honeycomb', 'star-field', 'waves']
 };
 
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
@@ -74,8 +75,7 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
     let totalCommits = 0;
     for (const char of evolutionChain) totalCommits += parseInt(char, 16);
     
-    // Complexity level based on total commit volume in that month
-    const complexity = Math.min(5, Math.floor(totalCommits / 20));
+    const complexity = Math.min(5, Math.floor(totalCommits / 15));
 
     let petVisuals: PetState = {
         body: pickRandom(PET_PARTS.bodies, rng),
@@ -87,12 +87,10 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         complexity
     };
 
-    // Evolution logic
     for (let i = 0; i < evolutionChain.length; i++) {
         const commitLevel = parseInt(evolutionChain[i], 16); 
         
-        // High level = Mutation
-        if (commitLevel >= 13) {
+        if (commitLevel >= 12) {
             const mRng = seededRandom(finalSeed + i + commitLevel);
             const newMutation = pickRandom(PET_PARTS.mutations, mRng);
             if (!petVisuals.mutations.includes(newMutation)) {
@@ -100,21 +98,18 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
             }
         }
 
-        // Mid level = Accessory
-        if (commitLevel === 10 && petVisuals.accessory === 'none') {
-            const aRng = seededRandom(finalSeed * (i + 1));
+        if (commitLevel === 11 && petVisuals.accessory === 'none') {
+            const aRng = seededRandom(finalSeed * (i + 5));
             petVisuals.accessory = pickRandom(PET_PARTS.accessories, aRng);
         }
 
-        // Rare level = Aura
         if (commitLevel === 15 && petVisuals.aura === 'none') {
-            const auRng = seededRandom(finalSeed + i);
+            const auRng = seededRandom(finalSeed + i + 100);
             petVisuals.aura = pickRandom(PET_PARTS.auras, auRng);
         }
     }
 
-    // Complexity overrides
-    if (complexity >= 3 && petVisuals.aura === 'none') {
+    if (complexity >= 4 && petVisuals.aura === 'none') {
         petVisuals.aura = pickRandom(PET_PARTS.auras.filter(a => a !== 'none'), rng);
     }
 
