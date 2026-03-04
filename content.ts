@@ -304,7 +304,7 @@ async function trySpawnCollection() {
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
             if (petData.username === username && petData.enabled && petData.year === viewedYear) {
-                spawnPet(generateProceduralPet(petData.signature), petId);
+                spawnPet(generateProceduralPet(petData.signature, petId), petId);
             }
         }
     } finally {

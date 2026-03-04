@@ -43,24 +43,36 @@ export function pickRandom<T>(array: T[], randomFunc: () => number): T {
     return array[Math.floor(randomFunc() * array.length)];
 }
 
+// Simple string hasher for salting seeds
+function hashString(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+        hash = ((hash << 5) - hash) + str.charCodeAt(i);
+        hash |= 0; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
+}
+
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
     bodies: ['slime', 'cube', 'wisp', 'mecha-spider'],
-    colors: ['#FF0055', '#00FFCC', '#FFDD00', '#B000FF', '#FF5500', '#55FF00'],
+    colors: ['#FF0055', '#00FFCC', '#FFDD00', '#B000FF', '#FF5500', '#55FF00', '#00AAFF', '#FF00FF'],
     auras: ['none', 'fire', 'digital-glitch', 'shadow'],
     mutations: ['horns', 'halo', 'bat-wings', 'spikes'],
     accessories: ['none', 'hat', 'scarf', 'glasses']
 };
 
-export function generateProceduralPet(hexString: string): PetState {
-    // Ensure we have at least 4 chars for a stable seed by padding if necessary
+export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
+    // Ensure we have at least 4 chars for a base seed
     let dna = hexString;
-    while (dna.length < 4) dna += (dna.length % 2 === 0 ? "F" : "0"); 
+    while (dna.length < 4) dna += "0"; 
 
-    // Genesis Block is the FIRST 4 chars of the month's DNA
-    const genesisHex = dna.slice(0, 4);
-    let seed = parseInt(genesisHex, 16); 
-    const rng = seededRandom(seed); 
+    // Combine signature seed with a salt (e.g., "Jan-2026") to ensure monthly uniqueness
+    const baseSeed = parseInt(dna.slice(0, 4), 16);
+    const saltHash = salt ? hashString(salt) : 0;
+    const finalSeed = baseSeed ^ saltHash;
+    
+    const rng = seededRandom(finalSeed); 
 
     let petVisuals: PetState = {
         body: pickRandom(PET_PARTS.bodies, rng),
@@ -76,7 +88,7 @@ export function generateProceduralPet(hexString: string): PetState {
         const commitLevel = parseInt(evolutionChain[i], 16); 
         
         if (commitLevel >= 13) {
-            const mutationRng = seededRandom(seed + i + commitLevel);
+            const mutationRng = seededRandom(finalSeed + i + commitLevel);
             const newMutation = pickRandom(PET_PARTS.mutations, mutationRng);
             if (!petVisuals.mutations.includes(newMutation)) {
                 petVisuals.mutations.push(newMutation);
@@ -84,7 +96,7 @@ export function generateProceduralPet(hexString: string): PetState {
         }
 
         if (commitLevel === 10 && petVisuals.accessory === 'none') {
-            const accRng = seededRandom(seed * (i + 1));
+            const accRng = seededRandom(finalSeed * (i + 1));
             petVisuals.accessory = pickRandom(PET_PARTS.accessories, accRng);
         }
     }
