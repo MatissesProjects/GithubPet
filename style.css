@@ -12,10 +12,10 @@
     justify-content: center;
 }
 
-/* Aggressive overflow and containment overrides */
+/* Aggressive overflow overrides */
 .js-yearly-contributions, .js-calendar-graph, .js-calendar-graph-svg,
 .ContributionCalendar, .ContributionCalendar-grid, .ContributionCalendar-content,
-[data-graph-url], .border.color-border-muted.color-bg-inset, .Box, svg.js-calendar-graph-svg {
+[data-graph-url], .Box, svg.js-calendar-graph-svg {
     overflow: visible !important;
     contain: none !important;
 }
@@ -25,7 +25,7 @@
     position: absolute;
     width: 16px;
     height: 4px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(0, 0, 0, 0.4);
     border-radius: 50%;
     bottom: -2px;
     left: 4px;
@@ -37,22 +37,24 @@
     width: 100%;
     height: 100%;
     animation: pet-idle 3s infinite ease-in-out;
-    transition: transform 0.3s, filter 0.3s;
-    background-color: var(--pet-color, #888); /* Fallback */
+    transition: transform 0.3s, filter 0.3s, box-shadow 0.3s;
+    background-color: var(--pet-color, #888); /* Core visibility */
+    border: 1px solid rgba(255,255,255,0.2);
+    box-sizing: border-box;
 }
 
 .dna-pet.is-moving .pet-visual {
     animation: pet-hop 0.5s infinite ease-in-out;
 }
 
-/* --- MOODS --- */
+/* --- MOODS (NO BLUR) --- */
 .dna-pet.mood-scared .pet-visual {
     animation: pet-shiver 0.1s infinite;
-    filter: saturate(0.5);
+    filter: saturate(0.3) contrast(0.8);
 }
 .dna-pet.mood-scared .pet-eyes::before, 
 .dna-pet.mood-scared .pet-eyes::after {
-    transform: scale(0.5);
+    transform: scale(0.4);
 }
 
 @keyframes pet-shiver {
@@ -64,26 +66,26 @@
 
 .dna-pet.mood-ecstatic .pet-visual {
     animation: pet-idle 0.8s infinite ease-in-out;
-    /* Use sharp shadows instead of blur filters */
-    box-shadow: 0 0 0 2px var(--pet-color), 0 0 10px var(--pet-color);
-    filter: brightness(1.2);
+    /* Sharp glow using multiple solid shadows instead of blur */
+    box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pet-color);
+    filter: brightness(1.3) contrast(1.2);
 }
 .dna-pet.mood-ecstatic .pet-eyes::before, 
 .dna-pet.mood-ecstatic .pet-eyes::after {
-    transform: scale(1.3);
+    transform: scale(1.4);
+    background: white !important;
 }
 
 /* Volumetric Gloss */
 .pet-visual::before {
     content: '';
     position: absolute;
-    top: 10%;
-    left: 10%;
-    width: 35%;
-    height: 35%;
-    background: rgba(255, 255, 255, 0.5);
+    top: 5%;
+    left: 5%;
+    width: 40%;
+    height: 40%;
+    background: rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    filter: blur(1px);
     z-index: 5;
     pointer-events: none;
 }
@@ -91,9 +93,9 @@
 /* Blinking Eyes */
 .pet-eyes {
     position: absolute;
-    top: 35%;
-    left: 20%;
-    width: 60%;
+    top: 30%;
+    left: 15%;
+    width: 70%;
     height: 20%;
     display: flex;
     justify-content: space-between;
@@ -102,13 +104,12 @@
 
 .pet-eyes::before, .pet-eyes::after {
     content: '';
-    width: 5px;
-    height: 5px;
-    background: white;
+    width: 6px;
+    height: 6px;
+    background: #000; /* Dark eyes for contrast */
     border-radius: 50%;
     animation: pet-blink 4s infinite;
-    transition: transform 0.3s;
-    box-shadow: 0 0 2px rgba(0,0,0,0.5);
+    transition: transform 0.2s;
 }
 
 @keyframes pet-blink {
@@ -119,54 +120,51 @@
 /* Animations */
 @keyframes pet-idle {
     0%, 100% { transform: translateY(0) scale(1, 1); }
-    50% { transform: translateY(-3px) scale(1.02, 0.98); }
+    50% { transform: translateY(-3px) scale(1.05, 0.95); }
 }
 
 @keyframes pet-hop {
     0%, 100% { transform: translateY(0) scale(1, 1); }
-    50% { transform: translateY(-12px) scale(0.9, 1.1) rotate(5deg); }
+    50% { transform: translateY(-12px) scale(0.8, 1.2); }
 }
 
 /* Bodies */
 .pet-visual.body-slime {
-    border-radius: 45% 45% 35% 35%;
-    background-image: radial-gradient(circle at 30% 30%, var(--pet-color), rgba(0,0,0,0.4));
+    border-radius: 40% 40% 30% 30%;
+    background-image: radial-gradient(circle at 30% 30%, transparent, rgba(0,0,0,0.5));
 }
 
 .pet-visual.body-cube {
-    border-radius: 6px;
-    background-image: linear-gradient(135deg, var(--pet-color), rgba(0,0,0,0.4));
+    border-radius: 4px;
+    background-image: linear-gradient(135deg, transparent, rgba(0,0,0,0.5));
 }
 
 .pet-visual.body-wisp {
     border-radius: 50%;
-    background-color: var(--pet-color);
-    filter: blur(3px) brightness(1.5);
-    animation: wisp-flicker 1.5s infinite alternate;
-    box-shadow: 0 0 15px var(--pet-color);
+    filter: brightness(1.5);
+    animation: wisp-flicker 1s infinite alternate;
 }
 
 .pet-visual.body-mecha-spider {
     clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
-    background-image: repeating-linear-gradient(45deg, var(--pet-color), rgba(0,0,0,0.4) 5px);
+    background-image: repeating-linear-gradient(45deg, transparent, rgba(0,0,0,0.3) 5px);
 }
 
 /* Mutations */
 .pet-visual.mut-horns::after {
     content: '▼ ▼';
     position: absolute;
-    top: -10px;
+    top: -12px;
     left: 0;
     width: 100%;
     text-align: center;
-    font-size: 10px;
-    color: var(--pet-color);
-    filter: brightness(0.6);
+    font-size: 12px;
+    color: inherit;
     z-index: -1;
 }
 
 .pet-visual.mut-halo {
-    box-shadow: 0 -12px 0 -4px rgba(255, 255, 255, 0.9), 0 0 15px rgba(255, 255, 255, 0.4);
+    box-shadow: 0 -12px 0 -4px gold;
 }
 
 .pet-visual.mut-bat-wings::after {
@@ -174,9 +172,9 @@
     position: absolute;
     font-size: 24px;
     left: 50%;
-    top: 40%;
+    top: 30%;
     transform: translate(-50%, -50%);
-    opacity: 0.6;
+    opacity: 0.8;
     z-index: -2;
 }
 
@@ -184,40 +182,35 @@
 .pet-visual.acc-hat::after {
     content: '';
     position: absolute;
-    top: -6px;
-    left: 10%;
-    width: 80%;
-    height: 8px;
+    top: -8px;
+    left: -10%;
+    width: 120%;
+    height: 4px;
     background: #e74c3c;
-    border-radius: 4px 4px 0 0;
+    border-radius: 2px;
     z-index: 15;
-    box-shadow: 0 2px 0 #c0392b;
 }
 
 .pet-visual.acc-scarf {
-    box-shadow: inset 0 -5px 0 #3498db;
+    border-bottom: 4px solid #3498db !important;
 }
 
 .pet-visual.acc-glasses::before {
-    content: 'oo';
+    content: '👓';
     position: absolute;
-    top: 20%;
+    top: 15%;
     left: 0;
     width: 100%;
     text-align: center;
-    font-family: monospace;
-    font-weight: bold;
-    color: #111;
-    font-size: 16px;
+    font-size: 14px;
     z-index: 20;
-    letter-spacing: 1px;
 }
 
 /* Tooltip & Speech */
 .dna-pet-tooltip {
     visibility: hidden;
     width: 140px;
-    background-color: rgba(13, 17, 23, 0.98);
+    background-color: #0d1117;
     color: #c9d1d9;
     text-align: center;
     border-radius: 8px;
@@ -226,9 +219,9 @@
     z-index: 100000000;
     bottom: 160%;
     left: 50%;
-    transform: translateX(-50%) scale(0.9);
+    transform: translateX(-50%);
     opacity: 0;
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: opacity 0.2s;
     font-size: 11px;
     border: 1px solid #30363d;
 }
@@ -236,21 +229,17 @@
 .dna-pet:hover .dna-pet-tooltip {
     visibility: visible;
     opacity: 1;
-    transform: translateX(-50%) scale(1);
 }
 
 @keyframes wisp-flicker {
-    from { opacity: 0.6; transform: scale(0.95); }
+    from { opacity: 0.8; transform: scale(0.95); }
     to { opacity: 1; transform: scale(1.05); }
 }
 
 /* Auras */
-.aura-fire { box-shadow: 0 0 15px #ff4400, inset 0 0 5px #ffcc00; }
+.aura-fire { box-shadow: inset 0 0 10px #ff4400; border: 2px orange solid !important; }
 .aura-digital-glitch { animation: glitch 0.2s infinite; }
 @keyframes glitch {
-    0% { transform: translate(0); filter: hue-rotate(0deg); }
-    20% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
-    40% { transform: translate(-2px, -2px); filter: hue-rotate(180deg); }
-    60% { transform: translate(2px, 2px); filter: hue-rotate(270deg); }
-    80% { transform: translate(2px, -2px); filter: hue-rotate(360deg); }
+    0% { transform: translate(0); }
+    50% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); }
 }
