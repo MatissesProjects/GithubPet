@@ -53,7 +53,8 @@ export const PET_PARTS: PetParts = {
 };
 
 export function generateProceduralPet(hexString: string): PetState {
-    const genesisHex = hexString.slice(-4);
+    // Genesis Block is the FIRST 4 chars (stable identity)
+    const genesisHex = hexString.slice(0, 4);
     let seed = parseInt(genesisHex, 16); 
     const rng = seededRandom(seed); 
 
@@ -65,10 +66,11 @@ export function generateProceduralPet(hexString: string): PetState {
         accessory: 'none'
     };
 
-    const evolutionChain = hexString.slice(0, -4);
+    // The rest is the evolution chain
+    const evolutionChain = hexString.slice(4);
     
-    // Read right-to-left
-    for (let i = evolutionChain.length - 1; i >= 0; i--) {
+    // Read chronological (left-to-right)
+    for (let i = 0; i < evolutionChain.length; i++) {
         const commitLevel = parseInt(evolutionChain[i], 16); 
         
         if (commitLevel >= 13) {

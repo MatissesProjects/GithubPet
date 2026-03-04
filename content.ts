@@ -32,6 +32,16 @@ function getActiveUsername(): string | null {
     return null;
 }
 
+function getCurrentViewedYear(): string {
+    const yearHeading = document.querySelector('.js-year-link.selected');
+    if (yearHeading && yearHeading.textContent) {
+        const match = yearHeading.textContent.match(/\d{4}/);
+        if (match) return match[0];
+    }
+    // Fallback to current year
+    return new Date().getFullYear().toString();
+}
+
 function getCommitCount(day: HTMLElement): number {
     const label = day.getAttribute('aria-label');
     if (label) {
@@ -61,6 +71,8 @@ function spawnPet(petState: PetState, petId: string): void {
     visual.style.setProperty('--pet-color', petState.color);
     
     if (petState.aura !== 'none') visual.classList.add(`aura-${petState.aura}`);
+    
+    // Mutations & Accessories
     petState.mutations.forEach(mut => {
         const mutEl = document.createElement('div');
         mutEl.className = `pet-mutation mut-${mut}`;
@@ -81,7 +93,6 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(visual);
     
     const idParts = petId.split('-');
-    // ID format: username-year-month
     const label = idParts.length >= 3 ? `${idParts[2]} ${idParts[1]}` : petId;
     
     const tooltip = document.createElement('div');
@@ -113,18 +124,8 @@ function startPatrol(petElement: HTMLElement): void {
         const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
         if (allDays.length === 0) return;
 
-        const now = new Date();
-        const futureLimit = new Date();
-        futureLimit.setDate(now.getDate() + 4);
-        
-        const patrolPool = allDays.filter(day => {
-            const dateStr = day.getAttribute('data-date');
-            return !dateStr || new Date(dateStr) <= futureLimit;
-        });
-
-        if (patrolPool.length === 0) return;
-
-        const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
+        // Restriction: stay within the graph year
+        const targetDay = allDays[Math.floor(Math.random() * allDays.length)];
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
@@ -173,7 +174,7 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
     if (allDays.length === 0 || sigChars.length === 0) return;
 
-    // Filter out future days from mapping
+    // Filter past days only for char mapping
     const now = new Date();
     const pastAndToday = allDays.filter(day => {
         const dateStr = day.getAttribute('data-date');
@@ -186,9 +187,7 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     const monthlySigs: Record<string, { sig: string, year: string }> = {};
 
-    // Map backwards: newest char to newest day
-    // We assume sigChars are chronological (left-to-right)
-    // and pastAndToday are chronological (DOM order)
+    // Offset if sigChars length doesn't match total days (usually matches visible graph)
     const offset = pastAndToday.length - sigChars.length;
     
     for (let i = 0; i < sigChars.length; i++) {
@@ -226,9 +225,7 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         }
     }
 
-    if (collectionChanged) {
-        await chrome.storage.local.set({ petCollection });
-    }
+    if (collectionChanged) await chrome.storage.local.set({ petCollection });
 }
 
 async function trySpawnCollection() {
@@ -240,13 +237,12 @@ async function trySpawnCollection() {
     if (!graphContainer) return;
 
     const username = getActiveUsername();
+    const viewedYear = getCurrentViewedYear();
     if (!username) return;
 
     if (sigElement) {
         const sigChars = extractSignatureChars(sigElement);
-        if (sigChars.length >= 4) {
-            await syncMonthlyPets(username, sigChars);
-        }
+        if (sigChars.length >= 4) await syncMonthlyPets(username, sigChars);
     }
 
     isInitializing = true;
@@ -254,17 +250,19 @@ async function trySpawnCollection() {
         const result = await chrome.storage.local.get(['petCollection']);
         const collection = result.petCollection || {};
         
-        const petElements = document.querySelectorAll('.dna-pet');
-        petElements.forEach(el => {
+        // 1. Purge pets that don't belong to CURRENT VIEWED YEAR or are disabled
+        const existingPets = document.querySelectorAll('.dna-pet');
+        existingPets.forEach(el => {
             const id = el.id.replace('pet-', '');
-            if (!collection[id] || !collection[id].enabled || collection[id].username !== username) {
+            if (!collection[id] || !collection[id].enabled || collection[id].year !== viewedYear || collection[id].username !== username) {
                 el.remove();
             }
         });
 
+        // 2. Spawn pets for the viewed year
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
-            if (petData.username === username && petData.enabled) {
+            if (petData.username === username && petData.enabled && petData.year === viewedYear) {
                 spawnPet(generateProceduralPet(petData.signature), petId);
             }
         }
