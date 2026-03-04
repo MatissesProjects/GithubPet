@@ -93,7 +93,7 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(visual);
     
     const idParts = petId.split('-');
-    const month = idParts[2]; // username-year-month
+    const month = idParts[2];
     const label = `${month} ${idParts[1]}`;
     
     const tooltip = document.createElement('div');
@@ -130,7 +130,7 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
         futureLimit.setDate(now.getDate() + 4);
         
         // Month specific pool
-        const patrolPool = allDays.filter(day => {
+        let patrolPool = allDays.filter(day => {
             const dateStr = day.getAttribute('data-date');
             if (!dateStr) return false;
             const date = new Date(dateStr);
@@ -138,7 +138,8 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
             return isTargetMonth && date <= futureLimit;
         });
 
-        if (patrolPool.length === 0) return;
+        // Fallback: If month pool is empty, just use all days so it doesn't freeze
+        if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
         const rect = targetDay.getBoundingClientRect();
@@ -217,7 +218,14 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         }
     }
 
+    // Clean up 'undefined' or malformed keys before saving
     for (const key in monthlySigs) {
+        if (key.includes('undefined')) {
+            // Re-assign orphaned chars to current month if needed
+            delete monthlySigs[key];
+            continue;
+        }
+
         const { sig, year } = monthlySigs[key];
         const month = key.split('-')[0];
         if (sig.length < 4) continue;
@@ -251,7 +259,6 @@ async function trySpawnCollection() {
     const viewedYear = getCurrentViewedYear();
     if (!username) return;
 
-    // Save viewed year for popup filtering
     chrome.storage.local.set({ viewedYear });
 
     if (sigElement) {
