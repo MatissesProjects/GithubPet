@@ -32,15 +32,6 @@ function getActiveUsername(): string | null {
     return null;
 }
 
-function getCurrentYear(): string {
-    const yearHeading = document.querySelector('.js-year-link.selected, .js-contribution-graph h2');
-    if (yearHeading && yearHeading.textContent) {
-        const match = yearHeading.textContent.match(/\d{4}/);
-        if (match) return match[0];
-    }
-    return new Date().getFullYear().toString();
-}
-
 function getCommitCount(day: HTMLElement): number {
     const label = day.getAttribute('aria-label');
     if (label) {
@@ -90,6 +81,7 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(visual);
     
     const idParts = petId.split('-');
+    // ID format: username-year-month
     const label = idParts.length >= 3 ? `${idParts[2]} ${idParts[1]}` : petId;
     
     const tooltip = document.createElement('div');
@@ -175,41 +167,55 @@ function startPatrol(petElement: HTMLElement): void {
     }, 4000 + Math.random() * 2000);
 }
 
-async function syncMonthlyPets(username: string, year: string, sigChars: string[]) {
+async function syncMonthlyPets(username: string, sigChars: string[]) {
     if (!isContextValid()) return;
     
-    // Find all days in the graph to map chars to months
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
     if (allDays.length === 0 || sigChars.length === 0) return;
+
+    // Filter out future days from mapping
+    const now = new Date();
+    const pastAndToday = allDays.filter(day => {
+        const dateStr = day.getAttribute('data-date');
+        return dateStr && new Date(dateStr) <= now;
+    });
 
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
-    // Group characters by month
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const monthlySigs: Record<string, string> = {};
+    const monthlySigs: Record<string, { sig: string, year: string }> = {};
 
-    // The signature usually maps 1:1 to the days currently loaded in the graph
-    // We iterate through days and pick the corresponding char from the start
-    for (let i = 0; i < Math.min(allDays.length, sigChars.length); i++) {
-        const dateStr = allDays[i].getAttribute('data-date');
+    // Map backwards: newest char to newest day
+    // We assume sigChars are chronological (left-to-right)
+    // and pastAndToday are chronological (DOM order)
+    const offset = pastAndToday.length - sigChars.length;
+    
+    for (let i = 0; i < sigChars.length; i++) {
+        const dayIndex = i + offset;
+        if (dayIndex < 0 || dayIndex >= pastAndToday.length) continue;
+
+        const dateStr = pastAndToday[dayIndex].getAttribute('data-date');
         if (dateStr) {
             const date = new Date(dateStr);
             const monthName = monthNames[date.getMonth()];
-            if (!monthlySigs[monthName]) monthlySigs[monthName] = "";
-            monthlySigs[monthName] += sigChars[i];
+            const yearStr = date.getFullYear().toString();
+            const key = `${monthName}-${yearStr}`;
+            
+            if (!monthlySigs[key]) monthlySigs[key] = { sig: "", year: yearStr };
+            monthlySigs[key].sig += sigChars[i];
         }
     }
 
-    // Register a pet for each month found
-    for (const month in monthlySigs) {
-        const monthSig = monthlySigs[month];
-        if (monthSig.length < 4) continue; // Need at least 4 chars for genesis
+    for (const key in monthlySigs) {
+        const { sig, year } = monthlySigs[key];
+        const month = key.split('-')[0];
+        if (sig.length < 4) continue;
 
         const petId = `${username}-${year}-${month}`;
-        if (!petCollection[petId] || petCollection[petId].signature !== monthSig) {
+        if (!petCollection[petId] || petCollection[petId].signature !== sig) {
             petCollection[petId] = {
-                signature: monthSig,
+                signature: sig,
                 username,
                 year,
                 month,
@@ -239,7 +245,7 @@ async function trySpawnCollection() {
     if (sigElement) {
         const sigChars = extractSignatureChars(sigElement);
         if (sigChars.length >= 4) {
-            await syncMonthlyPets(username, getCurrentYear(), sigChars);
+            await syncMonthlyPets(username, sigChars);
         }
     }
 
