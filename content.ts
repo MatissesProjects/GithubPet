@@ -128,7 +128,7 @@ function startPatrol(petElement: HTMLElement): void {
         // Re-calculate patrol pool every time to handle month changes/year swaps
         const now = new Date();
         const futureLimit = new Date();
-        futureLimit.setMonth(now.getMonth() + 2);
+        futureLimit.setDate(now.getDate() + 4);
         
         const patrolPool = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')).filter(day => {
             const dateStr = day.getAttribute('data-date');
