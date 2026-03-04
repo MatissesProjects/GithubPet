@@ -36,6 +36,10 @@ const PERSONALITY_PHRASES: Record<string, Record<string, string[]>> = {
     }
 };
 
+function isContextValid(): boolean {
+    return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
+}
+
 function extractSignatureChars(containerElement: HTMLElement): string[] {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
     return Array.from(charSpans).map(span => span.textContent?.trim() || '');
@@ -87,8 +91,12 @@ function getCommitCount(day: HTMLElement): number {
 const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 function spawnPet(petState: PetState, petId: string): void {
+    console.log("Spawning pet:", petId, petState);
     const graphContainer = document.querySelector('.js-calendar-graph') as HTMLElement;
-    if (!graphContainer) return;
+    if (!graphContainer) {
+        console.warn("No graph container found for spawning.");
+        return;
+    }
 
     if (document.getElementById(`pet-${petId}`)) return;
 
@@ -133,6 +141,11 @@ function spawnPet(petState: PetState, petId: string): void {
     face.appendChild(eyes);
     container.appendChild(face);
     
+    const idParts = petId.split('-');
+    const month = idParts[2] || "???";
+    const year = idParts[1] || "???";
+    const label = `${month} ${year}`;
+    
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
     tooltip.innerHTML = `
@@ -167,6 +180,7 @@ function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
         if (allDays.length === 0) return;
 
+        const now = new Date();
         const futureLimit = new Date();
         futureLimit.setDate(new Date().getDate() + 4);
         
@@ -205,11 +219,13 @@ function startPatrol(petElement: HTMLElement, petState: PetState): void {
 
         if (Math.random() > 0.8) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;
-            if (speech) {
+            if (speech && petState.personality && PERSONALITY_PHRASES[petState.personality]) {
                 const phrases = PERSONALITY_PHRASES[petState.personality][currentMood];
-                speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
-                speech.style.display = 'block';
-                setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2000);
+                if (phrases) {
+                    speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+                    speech.style.display = 'block';
+                    setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2000);
+                }
             }
         }
         setTimeout(() => petElement.classList.remove('is-moving'), 1000);
