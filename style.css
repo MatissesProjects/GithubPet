@@ -3,16 +3,46 @@
     position: absolute;
     width: 20px;
     height: 20px;
-    z-index: 1000;
+    z-index: 99999999 !important;
     pointer-events: auto;
     cursor: help;
     transition: left 1s cubic-bezier(0.45, 0.05, 0.55, 0.95), top 1s cubic-bezier(0.45, 0.05, 0.55, 0.95);
+}
+
+/* Aggressive overflow and containment overrides to prevent clipping by GitHub's layout */
+.js-yearly-contributions, 
+.js-calendar-graph,
+.js-calendar-graph-svg,
+.ContributionCalendar,
+.ContributionCalendar-grid,
+.ContributionCalendar-content,
+[data-graph-url],
+.border.color-border-muted.color-bg-inset,
+.Box {
+    overflow: visible !important;
+    contain: none !important; /* Disables GitHub's layout optimization that clips items */
+}
+
+/* Ensure the SVG itself doesn't clip */
+svg.js-calendar-graph-svg {
+    overflow: visible !important;
+}
+
+.pet-visual {
+    position: relative;
+    width: 100%;
+    height: 100%;
     animation: pet-idle 2s infinite ease-in-out;
+    transition: transform 0.3s;
+    z-index: 1;
+}
+
+.dna-pet.is-moving .pet-visual {
+    animation: pet-hop 0.5s infinite ease-in-out;
 }
 
 /* Eyes */
-.dna-pet::before {
-    content: '';
+.pet-eyes {
     position: absolute;
     top: 4px;
     left: 4px;
@@ -21,7 +51,7 @@
     background: white;
     border-radius: 50%;
     box-shadow: 9px 0 0 white;
-    z-index: 2;
+    z-index: 10;
 }
 
 /* Idle Bobbing */
@@ -30,106 +60,86 @@
     50% { transform: translateY(-3px) scale(1.05, 0.95); }
 }
 
-/* Hopping state during movement */
-.dna-pet.is-moving {
-    animation: pet-hop 0.5s infinite ease-in-out;
-}
-
 @keyframes pet-hop {
     0%, 100% { transform: translateY(0); }
     50% { transform: translateY(-10px) rotate(5deg); }
 }
 
 /* Bodies */
-.dna-pet.body-slime {
-    border-radius: 50% 50% 30% 30%;
-}
-
-.dna-pet.body-cube {
-    border-radius: 4px;
-}
-
-/* ... rest of existing bodies and mutations ... */
-
-.dna-pet.body-wisp {
+.pet-visual.body-slime { border-radius: 50% 50% 30% 30%; }
+.pet-visual.body-cube { border-radius: 4px; }
+.pet-visual.body-wisp {
     border-radius: 50%;
     filter: blur(2px);
     animation: wisp-flicker 1.5s infinite alternate;
 }
-
-.dna-pet.body-mecha-spider {
+.pet-visual.body-mecha-spider {
     border-radius: 4px;
     clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
 }
 
-/* Mutations (Simple Visual Indicators) */
-.dna-pet::before, .dna-pet::after {
+/* Mutations */
+.pet-visual.mut-horns::before {
     content: '';
     position: absolute;
-    background: inherit;
-}
-
-.dna-pet.mut-horns::before {
     top: -5px;
     left: 2px;
     width: 4px;
     height: 6px;
     clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-}
-.dna-pet.mut-horns::after {
-    top: -5px;
-    right: 2px;
-    width: 4px;
-    height: 6px;
-    clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+    background: inherit;
+    box-shadow: 12px 0 0 inherit;
 }
 
-.dna-pet.mut-halo {
+.pet-visual::after {
+    content: '';
+    position: absolute;
+    background: inherit;
+}
+
+.pet-visual.mut-halo {
     box-shadow: 0 -8px 0 -2px rgba(255, 255, 255, 0.8);
 }
 
-.dna-pet.mut-bat-wings::before {
+.pet-visual.mut-bat-wings::after {
     left: -8px;
     width: 8px;
     height: 10px;
     clip-path: polygon(100% 50%, 0% 0%, 0% 100%);
-}
-.dna-pet.mut-bat-wings::after {
-    right: -8px;
-    width: 8px;
-    height: 10px;
-    clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+    box-shadow: 36px 0 0 inherit;
 }
 
-.dna-pet.mut-spikes {
+.pet-visual.mut-spikes {
     filter: drop-shadow(0px 0px 2px black);
 }
 
 /* Tooltip */
 .dna-pet-tooltip {
     visibility: hidden;
-    width: 120px;
-    background-color: rgba(0, 0, 0, 0.8);
-    color: #fff;
+    width: 140px;
+    background-color: rgba(13, 17, 23, 0.98);
+    color: #c9d1d9;
     text-align: center;
     border-radius: 6px;
-    padding: 8px;
+    padding: 10px;
     position: absolute;
-    z-index: 1001;
-    bottom: 125%;
+    z-index: 100000000;
+    bottom: 150%;
     left: 50%;
-    margin-left: -60px;
+    transform: translateX(-50%);
     opacity: 0;
-    transition: opacity 0.3s;
-    font-size: 10px;
-    line-height: 1.4;
+    transition: opacity 0.3s, transform 0.3s;
+    font-size: 11px;
+    line-height: 1.5;
     pointer-events: none;
-    border: 1px solid #444;
+    border: 1px solid #30363d;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.6);
 }
 
 .dna-pet:hover .dna-pet-tooltip {
     visibility: visible;
     opacity: 1;
+    transform: translateX(-50%) translateY(-10px);
 }
 
 .dna-pet-tooltip::after {
@@ -137,10 +147,10 @@
     position: absolute;
     top: 100%;
     left: 50%;
-    margin-left: -5px;
-    border-width: 5px;
+    transform: translateX(-50%);
+    border-width: 6px;
     border-style: solid;
-    border-color: rgba(0, 0, 0, 0.8) transparent transparent transparent;
+    border-color: #30363d transparent transparent transparent;
 }
 
 /* Animations */
@@ -150,12 +160,8 @@
 }
 
 /* Auras */
-.aura-fire {
-    box-shadow: 0 0 10px #ff4400;
-}
-.aura-digital-glitch {
-    animation: glitch 0.2s infinite;
-}
+.aura-fire { box-shadow: 0 0 10px #ff4400; }
+.aura-digital-glitch { animation: glitch 0.2s infinite; }
 @keyframes glitch {
     0% { transform: translate(0); }
     20% { transform: translate(-2px, 2px); }
