@@ -1,16 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>DNA Pet Settings</title>
+    <title>DNA Pet Collection</title>
     <style>
-        body { width: 150px; padding: 10px; font-family: sans-serif; }
-        .toggle-btn { width: 100%; padding: 8px; cursor: pointer; }
+        body { 
+            width: 220px; 
+            padding: 12px; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; 
+            background-color: #0d1117;
+            color: #c9d1d9;
+        }
+        h3 { margin-top: 0; font-size: 14px; color: #58a6ff; }
+        #status { font-size: 11px; margin-bottom: 10px; color: #8b949e; }
+        .collection-item:last-child { border-bottom: none !important; }
     </style>
 </head>
 <body>
-    <h3>DNA Pet</h3>
+    <h3>DNA Pet Party 🧬</h3>
     <p id="status">Loading...</p>
-    <button id="toggle-btn" class="toggle-btn">Toggle for this user</button>
+    <div id="collection-list"></div>
     <script src="dist/popup.js"></script>
 </body>
 </html>

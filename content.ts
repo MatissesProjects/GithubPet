@@ -1,4 +1,4 @@
-import { generateProceduralPet, PetState } from './engine';
+import { generateProceduralPet, PetState, CollectionPet } from './engine';
 
 // --- 3. EXTRACTION & OBSERVER ---
 let isInitializing = false;
@@ -36,6 +36,15 @@ function getActiveUsername(): string | null {
     return null;
 }
 
+function getCurrentYear(): string {
+    const yearHeading = document.querySelector('.js-year-link.selected, .js-contribution-graph h2');
+    if (yearHeading && yearHeading.textContent) {
+        const match = yearHeading.textContent.match(/\d{4}/);
+        if (match) return match[0];
+    }
+    return new Date().getFullYear().toString();
+}
+
 function getL2Threshold(): number {
     const threshEl = document.querySelector('.gh-thresh-3');
     if (threshEl && threshEl.textContent) {
@@ -55,20 +64,15 @@ function getCommitCount(day: HTMLElement): number {
     return parseInt(day.getAttribute('data-level') || '0', 10);
 }
 
-function spawnPet(petState: PetState): void {
-    const existingPet = document.getElementById('dna-pet-instance');
-    if (existingPet) {
-        if (existingPet.parentElement?.contains(document.querySelector('.js-calendar-graph'))) {
-            return;
-        }
-        existingPet.remove();
-    }
-
+function spawnPet(petState: PetState, petId: string): void {
     const graphContainer = document.querySelector('.js-calendar-graph') as HTMLElement;
     if (!graphContainer) return;
 
+    // Check if THIS specific pet already exists
+    if (document.getElementById(`pet-${petId}`)) return;
+
     const container = document.createElement('div');
-    container.id = 'dna-pet-instance';
+    container.id = `pet-${petId}`;
     container.className = `dna-pet`;
 
     const shadow = document.createElement('div');
@@ -101,7 +105,7 @@ function spawnPet(petState: PetState): void {
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
-    tooltip.innerHTML = `<strong>DNA Pet</strong><br>Type: ${petState.body}<br>${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}Mutations: ${petState.mutations.join(', ') || 'None'}`;
+    tooltip.innerHTML = `<strong>DNA Pet (${petId.split('-').pop()})</strong><br>Type: ${petState.body}<br>${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}Mutations: ${petState.mutations.join(', ') || 'None'}`;
     container.appendChild(tooltip);
 
     const speech = document.createElement('div');
@@ -116,26 +120,26 @@ function spawnPet(petState: PetState): void {
 }
 
 function startPatrol(petElement: HTMLElement): void {
-    const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
-    if (allDays.length === 0) return;
-
-    const phrases: Record<string, string[]> = {
-        scared: ["It's so empty here...", "Where are the commits?", "*shiver*", "So dark...", "I'm lonely..."],
-        happy: ["Found a commit!", "Shiny squares!", "Exploring!", "*happy chirps*", "Nom nom..."],
-        ecstatic: ["WOW! SO MANY COMMITS!", "This is the BEST square!", "POWER OVERWHELMING!", "*party noises*", "I love this day!"]
+    const moodPhrases: Record<string, string[]> = {
+        scared: ["Empty...", "Lonely...", "*shiver*", "Dark here..."],
+        happy: ["Chirp!", "Commits!", "Nom...", "Shiny!"],
+        ecstatic: ["WOW!", "BEST DAY!", "POWER!", "*party*", "LOVE IT!"]
     };
 
     function moveToRandomDay() {
         if (!petElement.parentElement) return;
         
+        const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
+        if (allDays.length === 0) return;
+
         const now = new Date();
         const futureLimit = new Date();
         futureLimit.setDate(now.getDate() + 4);
         
-        const patrolPool = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')).filter(day => {
+        const patrolPool = allDays.filter(day => {
             const dateStr = day.getAttribute('data-date');
             return !dateStr || new Date(dateStr) <= futureLimit;
-        }) as HTMLElement[];
+        });
 
         if (patrolPool.length === 0) return;
 
@@ -144,7 +148,6 @@ function startPatrol(petElement: HTMLElement): void {
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
         const count = getCommitCount(targetDay);
-        const l2Threshold = getL2Threshold();
         const level = parseInt(targetDay.getAttribute('data-level') || '0', 10);
         
         petElement.classList.remove('mood-scared', 'mood-happy', 'mood-ecstatic');
@@ -155,7 +158,7 @@ function startPatrol(petElement: HTMLElement): void {
         } else if (level >= 3) {
             petElement.classList.add('mood-ecstatic');
             currentMood = 'ecstatic';
-        } else if (count >= l2Threshold) {
+        } else {
             petElement.classList.add('mood-happy');
             currentMood = 'happy';
         }
@@ -164,13 +167,13 @@ function startPatrol(petElement: HTMLElement): void {
         petElement.style.left = `${rect.left - containerRect.left + (rect.width / 2) - 12}px`;
         petElement.style.top = `${rect.top - containerRect.top + (rect.height / 2) - 12}px`;
 
-        if (Math.random() > 0.7) {
+        if (Math.random() > 0.85) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;
             if (speech) {
-                const moodPhrasesArray = phrases[currentMood];
-                speech.textContent = moodPhrasesArray[Math.floor(Math.random() * moodPhrasesArray.length)];
+                const phrases = moodPhrases[currentMood];
+                speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
                 speech.style.display = 'block';
-                setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2500);
+                setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2000);
             }
         }
         setTimeout(() => petElement.classList.remove('is-moving'), 1000);
@@ -180,38 +183,66 @@ function startPatrol(petElement: HTMLElement): void {
     const interval = setInterval(() => {
         if (!document.body.contains(petElement)) { clearInterval(interval); return; }
         moveToRandomDay();
-    }, 5000);
+    }, 4000 + Math.random() * 2000); // Varied patrol timing
 }
 
-async function trySpawn() {
+async function syncPetCollection(username: string, year: string, signature: string) {
+    if (!isContextValid()) return;
+    const petId = `${username}-${year}`;
+    const result = await chrome.storage.local.get(['petCollection']);
+    const collection = result.petCollection || {};
+
+    if (!collection[petId] || collection[petId].signature !== signature) {
+        collection[petId] = {
+            signature,
+            username,
+            year,
+            enabled: true,
+            addedAt: Date.now()
+        };
+        await chrome.storage.local.set({ petCollection: collection });
+    }
+}
+
+async function trySpawnCollection() {
     if (!isContextValid()) return;
     if (isInitializing) return;
     
     const sigElement = document.getElementById('gh-pulse-signature');
     const graphContainer = document.querySelector('.js-calendar-graph');
-    if (!sigElement || !graphContainer) return;
-
-    const signature = extractSignatureString(sigElement);
-    if (signature.length < 4) return;
+    if (!graphContainer) return;
 
     const username = getActiveUsername();
     if (!username) return;
 
+    // 1. Register current year pet if signature is visible
+    if (sigElement) {
+        const signature = extractSignatureString(sigElement);
+        if (signature.length >= 4) {
+            await syncPetCollection(username, getCurrentYear(), signature);
+        }
+    }
+
     isInitializing = true;
     try {
-        const result = await chrome.storage.local.get(['blacklist']);
-        if (!isContextValid()) return; // Re-check after async
-        const blacklist = result.blacklist || [];
-        if (blacklist.includes(username)) {
-            const existing = document.getElementById('dna-pet-instance');
-            if (existing) existing.remove();
-            return;
-        }
-        spawnPet(generateProceduralPet(signature));
-    } catch (e) {
-        // Silent fail for expected extension context issues
-        if (e instanceof Error && !e.message.includes('Extension context invalidated')) {
-            console.error("DNA Pet Spawn Error", e);
+        const result = await chrome.storage.local.get(['petCollection']);
+        const collection = result.petCollection || {};
+        
+        // 2. Clear pets that should no longer be here (e.g. navigation or disabled)
+        const petElements = document.querySelectorAll('.dna-pet');
+        petElements.forEach(el => {
+            const id = el.id.replace('pet-', '');
+            if (!collection[id] || !collection[id].enabled || collection[id].username !== username) {
+                el.remove();
+            }
+        });
+
+        // 3. Spawn all enabled pets for this user
+        for (const petId in collection) {
+            const petData: CollectionPet = collection[petId];
+            if (petData.username === username && petData.enabled) {
+                spawnPet(generateProceduralPet(petData.signature), petId);
+            }
         }
     } finally {
         isInitializing = false;
@@ -220,12 +251,12 @@ async function trySpawn() {
 
 if (isContextValid()) {
     chrome.storage.onChanged.addListener((changes) => {
-        if (changes.blacklist) trySpawn();
+        if (changes.petCollection) trySpawnCollection();
     });
 
-    const observer = new MutationObserver(() => trySpawn());
+    const observer = new MutationObserver(() => trySpawnCollection());
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-    setInterval(trySpawn, 1000);
-    trySpawn();
+    setInterval(trySpawnCollection, 2000);
+    trySpawnCollection();
 }

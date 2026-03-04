@@ -12,6 +12,14 @@ export interface PetState {
     accessory: PetAccessory;
 }
 
+export interface CollectionPet {
+    signature: string;
+    username: string;
+    year: string;
+    enabled: boolean;
+    addedAt: number;
+}
+
 export interface PetParts {
     bodies: PetBody[];
     colors: string[];
