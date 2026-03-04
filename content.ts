@@ -2,6 +2,7 @@ import { generateProceduralPet, PetState } from './engine';
 
 // --- 3. EXTRACTION & OBSERVER ---
 let isInitializing = false;
+const INITIAL_DELAY = 3000; // 3 seconds wait for other extensions
 
 function extractSignatureString(containerElement: HTMLElement): string {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
@@ -199,7 +200,6 @@ function checkAndInit() {
     const threshElement = document.querySelector('.gh-thresh-3');
     const petExists = document.getElementById('dna-pet-instance');
     
-    // Ensure the signature actually has characters loaded
     const hasChars = sigElement && sigElement.querySelectorAll('.gh-sig-char').length >= 4;
     
     if (sigElement && graphContainer && threshElement && hasChars && !petExists) {
@@ -214,8 +214,11 @@ chrome.storage.onChanged.addListener((changes) => {
     }
 });
 
-const observer = new MutationObserver(checkAndInit);
+const observer = new MutationObserver(() => {
+    // Small delay to let other extension finish DOM manipulation
+    setTimeout(checkAndInit, 500);
+});
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-// Initial trigger
-checkAndInit();
+// Initial trigger with full 3s wait
+setTimeout(checkAndInit, INITIAL_DELAY);
