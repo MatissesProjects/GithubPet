@@ -20,10 +20,11 @@ function forceOverflowVisible(element: HTMLElement): void {
 }
 
 function getActiveUsername(): string | null {
-    const parts = window.location.pathname.split('/').filter(p => p.length > 0);
+    const path = window.location.pathname;
+    const parts = path.split('/').filter(p => p.length > 0);
     if (parts.length > 0) {
         const firstPart = parts[0];
-        const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending'];
+        const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending', 'account'];
         if (!reserved.includes(firstPart)) {
             return firstPart;
         }
@@ -52,7 +53,13 @@ function getCommitCount(day: HTMLElement): number {
 
 function spawnPet(petState: PetState): void {
     const existingPet = document.getElementById('dna-pet-instance');
-    if (existingPet) existingPet.remove();
+    if (existingPet) {
+        // If the pet already exists, we might still want to re-inject if the container changed (year swap)
+        if (existingPet.parentElement?.contains(document.querySelector('.js-calendar-graph'))) {
+            return; // Already in the right place
+        }
+        existingPet.remove();
+    }
 
     const graphContainer = document.querySelector('.js-calendar-graph') as HTMLElement;
     if (!graphContainer) return;
@@ -109,14 +116,6 @@ function startPatrol(petElement: HTMLElement): void {
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
     if (allDays.length === 0) return;
 
-    const futureLimit = new Date();
-    futureLimit.setMonth(new Date().getMonth() + 2);
-
-    const patrolPool = allDays.filter(day => {
-        const dateStr = day.getAttribute('data-date');
-        return !dateStr || new Date(dateStr) <= futureLimit;
-    });
-
     const moodPhrases: Record<string, string[]> = {
         scared: ["It's so empty here...", "Where are the commits?", "*shiver*", "So dark...", "I'm lonely..."],
         happy: ["Found a commit!", "Shiny squares!", "Exploring!", "*happy chirps*", "Nom nom..."],
@@ -125,6 +124,19 @@ function startPatrol(petElement: HTMLElement): void {
 
     function moveToRandomDay() {
         if (!petElement.parentElement) return;
+        
+        // Re-calculate patrol pool every time to handle month changes/year swaps
+        const now = new Date();
+        const futureLimit = new Date();
+        futureLimit.setMonth(now.getMonth() + 2);
+        
+        const patrolPool = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')).filter(day => {
+            const dateStr = day.getAttribute('data-date');
+            return !dateStr || new Date(dateStr) <= futureLimit;
+        }) as HTMLElement[];
+
+        if (patrolPool.length === 0) return;
+
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
@@ -169,67 +181,44 @@ function startPatrol(petElement: HTMLElement): void {
     }, 5000);
 }
 
-async function initEngine(sigElement: HTMLElement): Promise<void> {
+async function trySpawn() {
     if (isInitializing) return;
+    
+    const sigElement = document.getElementById('gh-pulse-signature');
+    const graphContainer = document.querySelector('.js-calendar-graph');
+    if (!sigElement || !graphContainer) return;
+
+    const signature = extractSignatureString(sigElement);
+    if (signature.length < 4) return;
+
+    const username = getActiveUsername();
+    if (!username) return;
+
     isInitializing = true;
-
     try {
-        const username = getActiveUsername();
-        if (!username) return;
-
-        const { blacklist = [] } = await (chrome.storage.local.get('blacklist') as any);
+        const result = await chrome.storage.local.get(['blacklist']);
+        const blacklist = result.blacklist || [];
         if (blacklist.includes(username)) {
             const existing = document.getElementById('dna-pet-instance');
             if (existing) existing.remove();
             return;
         }
-
-        const signature = extractSignatureString(sigElement);
-        if (!signature || signature.length < 4) return;
-
         spawnPet(generateProceduralPet(signature));
+    } catch (e) {
+        console.error("DNA Pet Spawn Error", e);
     } finally {
         isInitializing = false;
     }
 }
 
-function checkAndInit() {
-    const petExists = document.getElementById('dna-pet-instance');
-    if (petExists) return;
-
-    const sigElement = document.getElementById('gh-pulse-signature');
-    const graphContainer = document.querySelector('.js-calendar-graph');
-    const threshElement = document.querySelector('.gh-thresh-3');
-    
-    if (sigElement && graphContainer && threshElement) {
-        const signature = extractSignatureString(sigElement);
-        const hasData = signature.length >= 4;
-        const hasThresh = threshElement.textContent?.includes('L2');
-        
-        if (hasData && hasThresh) {
-            initEngine(sigElement);
-        }
-    }
-}
-
+// Watch for any changes
 chrome.storage.onChanged.addListener((changes) => {
-    if (changes.blacklist) {
-        const sigElement = document.getElementById('gh-pulse-signature');
-        if (sigElement) initEngine(sigElement);
-    }
+    if (changes.blacklist) trySpawn();
 });
 
-// Robust, multi-layered waiting logic
-const observer = new MutationObserver(checkAndInit);
+const observer = new MutationObserver(() => trySpawn());
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-// Insistent polling until spawned
-const insistentPoll = setInterval(() => {
-    checkAndInit();
-    if (document.getElementById('dna-pet-instance')) {
-        // We don't clear it because we want to handle profile navigation (SPA)
-        // Actually, let's keep it running but check petExists at start of checkAndInit
-    }
-}, 1000);
-
-checkAndInit();
+// Initial and recurring checks
+setInterval(trySpawn, 1000);
+trySpawn();
