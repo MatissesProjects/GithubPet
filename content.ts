@@ -77,13 +77,27 @@ function spawnPet(petState: PetState): void {
 }
 
 function startPatrol(petElement: HTMLElement): void {
-    const days = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
-    if (days.length === 0) return;
+    const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
+    if (allDays.length === 0) return;
+
+    // Filter days: only those from start of year up to today + 2 months
+    const now = new Date();
+    const futureLimit = new Date();
+    futureLimit.setMonth(now.getMonth() + 2);
+
+    const activeDays = allDays.filter(day => {
+        const dateStr = day.getAttribute('data-date');
+        if (!dateStr) return true; // Keep if no date (e.g. padding)
+        const dayDate = new Date(dateStr);
+        return dayDate <= futureLimit;
+    });
+
+    const patrolPool = activeDays.length > 0 ? activeDays : allDays;
 
     const phrases = ["*happy chirps*", "Found a commit!", "Nom nom...", "Zzz...", "Exploring!", "Looking for bugs...", "Shiny squares!", "I like the green ones."];
 
     function pickWeightedDay(): HTMLElement {
-        const weights = days.map(day => {
+        const weights = patrolPool.map(day => {
             const level = parseInt(day.getAttribute('data-level') || '0', 10);
             return level + 1;
         });
@@ -91,13 +105,13 @@ function startPatrol(petElement: HTMLElement): void {
         const totalWeight = weights.reduce((a, b) => a + b, 0);
         let random = Math.random() * totalWeight;
 
-        for (let i = 0; i < days.length; i++) {
+        for (let i = 0; i < patrolPool.length; i++) {
             if (random < weights[i]) {
-                return days[i];
+                return patrolPool[i];
             }
             random -= weights[i];
         }
-        return days[Math.floor(Math.random() * days.length)];
+        return patrolPool[Math.floor(Math.random() * patrolPool.length)];
     }
 
     function moveToRandomDay() {
