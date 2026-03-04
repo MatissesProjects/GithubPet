@@ -3,10 +3,8 @@
 A Chrome extension that brings your GitHub contribution graph to life with procedurally generated, deterministic digital pets.
 
 ![Pet Exploring Example](exploringPetExample.png)
+![Pet Exploring gif](exploringPetGif.gif)
 
-<video width="640" height="480" controls>
-  <source src="exampleVideo.mp4" type="video/mp4">
-</video>
 
 ## 🌟 The Concept
 
