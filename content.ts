@@ -22,12 +22,12 @@ function forceOverflowVisible(element: HTMLElement): void {
 }
 
 function getActiveUsername(): string | null {
-    const path = window.location.pathname;
-    const parts = path.split('/').filter(p => p.length > 0);
-    if (parts.length > 0) {
-        const firstPart = parts[0];
-        const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending', 'account'];
-        if (!reserved.includes(firstPart)) return firstPart;
+    const pathParts = window.location.pathname.split('/').filter(Boolean);
+    if (pathParts.length > 0) {
+        const first = pathParts[0];
+        // More comprehensive reserved list
+        const reserved = ['settings', 'orgs', 'organizations', 'notifications', 'search', 'explore', 'marketplace', 'trending', 'account', 'pulls', 'issues', 'codespaces'];
+        if (!reserved.includes(first)) return first;
     }
     return null;
 }
@@ -41,7 +41,6 @@ function getCurrentViewedYear(): string {
     return new Date().getFullYear().toString();
 }
 
-// Timezone-safe date parsing for YYYY-MM-DD
 function parseDateParts(dateStr: string) {
     const parts = dateStr.split('-').map(Number);
     return {
@@ -111,8 +110,9 @@ function spawnPet(petState: PetState, petId: string): void {
     container.appendChild(visual);
     
     const idParts = petId.split('-');
-    const month = idParts[2];
-    const label = `${month} ${idParts[1]}`;
+    const month = idParts[2] || "Unknown";
+    const year = idParts[1] || "Unknown";
+    const label = `${month} ${year}`;
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
@@ -147,19 +147,15 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
         const futureLimit = new Date();
         futureLimit.setDate(now.getDate() + 4);
         
-        // Month specific pool - using safe parsing
         let patrolPool = allDays.filter(day => {
             const dateStr = day.getAttribute('data-date');
             if (!dateStr) return false;
-            
-            const { month, year } = parseDateParts(dateStr);
+            const { month } = parseDateParts(dateStr);
             const isTargetMonth = monthNames[month] === targetMonth;
-            
-            // Limit to past and near future
-            const dateObj = new Date(dateStr);
-            return isTargetMonth && dateObj <= futureLimit;
+            return isTargetMonth && new Date(dateStr) <= futureLimit;
         });
 
+        // Fallback to all visible days if month pool is empty or malformed
         if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
@@ -212,13 +208,25 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     if (allDays.length === 0 || sigChars.length === 0) return;
 
     const now = new Date();
+    const viewedYear = getCurrentViewedYear();
+    
     const pastAndToday = allDays.filter(day => {
         const dateStr = day.getAttribute('data-date');
-        return dateStr && new Date(dateStr) <= now;
+        if (!dateStr) return false;
+        const { year } = parseDateParts(dateStr);
+        return year.toString() === viewedYear && new Date(dateStr) <= now;
     });
 
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
+
+    // REPAIR: Remove any 'undefined' entries
+    for (const id in petCollection) {
+        if (id.includes('undefined')) {
+            delete petCollection[id];
+            collectionChanged = true;
+        }
+    }
 
     const monthlySigs: Record<string, { sig: string, year: string }> = {};
     const offset = pastAndToday.length - sigChars.length;
@@ -231,6 +239,8 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         if (dateStr) {
             const { month, year } = parseDateParts(dateStr);
             const monthName = monthNames[month];
+            if (!monthName) continue;
+
             const yearStr = year.toString();
             const key = `${monthName}-${yearStr}`;
             
@@ -240,19 +250,17 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     }
 
     for (const key in monthlySigs) {
-        if (key.includes('undefined')) continue;
-
         const { sig, year } = monthlySigs[key];
-        const month = key.split('-')[0];
+        const monthName = key.split('-')[0];
         if (sig.length < 4) continue;
 
-        const petId = `${username}-${year}-${month}`;
+        const petId = `${username}-${year}-${monthName}`;
         if (!petCollection[petId] || petCollection[petId].signature !== sig) {
             petCollection[petId] = {
                 signature: sig,
                 username,
                 year,
-                month,
+                month: monthName,
                 enabled: true,
                 addedAt: Date.now()
             };
