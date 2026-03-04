@@ -3,6 +3,10 @@ import { generateProceduralPet, PetState } from './engine';
 // --- 3. EXTRACTION & OBSERVER ---
 let isInitializing = false;
 
+function isContextValid(): boolean {
+    return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
+}
+
 function extractSignatureString(containerElement: HTMLElement): string {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
     let hexString = '';
@@ -54,9 +58,8 @@ function getCommitCount(day: HTMLElement): number {
 function spawnPet(petState: PetState): void {
     const existingPet = document.getElementById('dna-pet-instance');
     if (existingPet) {
-        // If the pet already exists, we might still want to re-inject if the container changed (year swap)
         if (existingPet.parentElement?.contains(document.querySelector('.js-calendar-graph'))) {
-            return; // Already in the right place
+            return;
         }
         existingPet.remove();
     }
@@ -116,7 +119,7 @@ function startPatrol(petElement: HTMLElement): void {
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
     if (allDays.length === 0) return;
 
-    const moodPhrases: Record<string, string[]> = {
+    const phrases: Record<string, string[]> = {
         scared: ["It's so empty here...", "Where are the commits?", "*shiver*", "So dark...", "I'm lonely..."],
         happy: ["Found a commit!", "Shiny squares!", "Exploring!", "*happy chirps*", "Nom nom..."],
         ecstatic: ["WOW! SO MANY COMMITS!", "This is the BEST square!", "POWER OVERWHELMING!", "*party noises*", "I love this day!"]
@@ -125,7 +128,6 @@ function startPatrol(petElement: HTMLElement): void {
     function moveToRandomDay() {
         if (!petElement.parentElement) return;
         
-        // Re-calculate patrol pool every time to handle month changes/year swaps
         const now = new Date();
         const futureLimit = new Date();
         futureLimit.setDate(now.getDate() + 4);
@@ -165,8 +167,8 @@ function startPatrol(petElement: HTMLElement): void {
         if (Math.random() > 0.7) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;
             if (speech) {
-                const phrases = moodPhrases[currentMood];
-                speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+                const moodPhrasesArray = phrases[currentMood];
+                speech.textContent = moodPhrasesArray[Math.floor(Math.random() * moodPhrasesArray.length)];
                 speech.style.display = 'block';
                 setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2500);
             }
@@ -182,6 +184,7 @@ function startPatrol(petElement: HTMLElement): void {
 }
 
 async function trySpawn() {
+    if (!isContextValid()) return;
     if (isInitializing) return;
     
     const sigElement = document.getElementById('gh-pulse-signature');
@@ -197,6 +200,7 @@ async function trySpawn() {
     isInitializing = true;
     try {
         const result = await chrome.storage.local.get(['blacklist']);
+        if (!isContextValid()) return; // Re-check after async
         const blacklist = result.blacklist || [];
         if (blacklist.includes(username)) {
             const existing = document.getElementById('dna-pet-instance');
@@ -205,20 +209,23 @@ async function trySpawn() {
         }
         spawnPet(generateProceduralPet(signature));
     } catch (e) {
-        console.error("DNA Pet Spawn Error", e);
+        // Silent fail for expected extension context issues
+        if (e instanceof Error && !e.message.includes('Extension context invalidated')) {
+            console.error("DNA Pet Spawn Error", e);
+        }
     } finally {
         isInitializing = false;
     }
 }
 
-// Watch for any changes
-chrome.storage.onChanged.addListener((changes) => {
-    if (changes.blacklist) trySpawn();
-});
+if (isContextValid()) {
+    chrome.storage.onChanged.addListener((changes) => {
+        if (changes.blacklist) trySpawn();
+    });
 
-const observer = new MutationObserver(() => trySpawn());
-observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    const observer = new MutationObserver(() => trySpawn());
+    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-// Initial and recurring checks
-setInterval(trySpawn, 1000);
-trySpawn();
+    setInterval(trySpawn, 1000);
+    trySpawn();
+}
