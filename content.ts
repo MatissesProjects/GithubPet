@@ -73,6 +73,15 @@ function spawnPet(petState: PetState, petId: string): void {
     
     if (petState.aura !== 'none') visual.classList.add(`aura-${petState.aura}`);
     
+    // Mecha-spider legs
+    if (petState.body === 'mecha-spider') {
+        for (let i = 1; i <= 4; i++) {
+            const leg = document.createElement('div');
+            leg.className = `pet-leg leg-${i}`;
+            visual.appendChild(leg);
+        }
+    }
+
     petState.mutations.forEach(mut => {
         const mutEl = document.createElement('div');
         mutEl.className = `pet-mutation mut-${mut}`;
@@ -90,6 +99,7 @@ function spawnPet(petState: PetState, petId: string): void {
     eyes.className = 'pet-eyes';
     face.appendChild(eyes);
     visual.appendChild(face);
+
     container.appendChild(visual);
     
     const idParts = petId.split('-');
@@ -129,7 +139,6 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
         const futureLimit = new Date();
         futureLimit.setDate(now.getDate() + 4);
         
-        // Month specific pool
         let patrolPool = allDays.filter(day => {
             const dateStr = day.getAttribute('data-date');
             if (!dateStr) return false;
@@ -138,7 +147,6 @@ function startPatrol(petElement: HTMLElement, targetMonth: string): void {
             return isTargetMonth && date <= futureLimit;
         });
 
-        // Fallback: If month pool is empty, just use all days so it doesn't freeze
         if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
@@ -218,13 +226,8 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         }
     }
 
-    // Clean up 'undefined' or malformed keys before saving
     for (const key in monthlySigs) {
-        if (key.includes('undefined')) {
-            // Re-assign orphaned chars to current month if needed
-            delete monthlySigs[key];
-            continue;
-        }
+        if (key.includes('undefined')) continue;
 
         const { sig, year } = monthlySigs[key];
         const month = key.split('-')[0];
