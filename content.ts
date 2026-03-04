@@ -2,7 +2,6 @@ import { generateProceduralPet, PetState } from './engine';
 
 // --- 3. EXTRACTION & OBSERVER ---
 let isInitializing = false;
-const INITIAL_DELAY = 3000; // 3 seconds wait for other extensions
 
 function extractSignatureString(containerElement: HTMLElement): string {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
@@ -195,14 +194,16 @@ async function initEngine(sigElement: HTMLElement): Promise<void> {
 }
 
 function checkAndInit() {
+    if (document.getElementById('dna-pet-instance')) return;
+
     const sigElement = document.getElementById('gh-pulse-signature');
     const graphContainer = document.querySelector('.js-calendar-graph');
     const threshElement = document.querySelector('.gh-thresh-3');
-    const petExists = document.getElementById('dna-pet-instance');
     
-    const hasChars = sigElement && sigElement.querySelectorAll('.gh-sig-char').length >= 4;
+    const signature = sigElement ? extractSignatureString(sigElement) : "";
+    const hasData = signature.length >= 4;
     
-    if (sigElement && graphContainer && threshElement && hasChars && !petExists) {
+    if (sigElement && graphContainer && threshElement && hasData) {
         initEngine(sigElement);
     }
 }
@@ -214,11 +215,18 @@ chrome.storage.onChanged.addListener((changes) => {
     }
 });
 
+// Watch for DOM changes
 const observer = new MutationObserver(() => {
-    // Small delay to let other extension finish DOM manipulation
-    setTimeout(checkAndInit, 500);
+    setTimeout(checkAndInit, 100);
 });
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-// Initial trigger with full 3s wait
-setTimeout(checkAndInit, INITIAL_DELAY);
+// Insistent retry loop for the first 20 seconds
+let retries = 0;
+const insistentInterval = setInterval(() => {
+    checkAndInit();
+    retries++;
+    if (retries > 20 || document.getElementById('dna-pet-instance')) {
+        clearInterval(insistentInterval);
+    }
+}, 1000);
