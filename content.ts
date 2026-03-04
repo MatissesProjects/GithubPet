@@ -194,17 +194,21 @@ async function initEngine(sigElement: HTMLElement): Promise<void> {
 }
 
 function checkAndInit() {
-    if (document.getElementById('dna-pet-instance')) return;
+    const petExists = document.getElementById('dna-pet-instance');
+    if (petExists) return;
 
     const sigElement = document.getElementById('gh-pulse-signature');
     const graphContainer = document.querySelector('.js-calendar-graph');
     const threshElement = document.querySelector('.gh-thresh-3');
     
-    const signature = sigElement ? extractSignatureString(sigElement) : "";
-    const hasData = signature.length >= 4;
-    
-    if (sigElement && graphContainer && threshElement && hasData) {
-        initEngine(sigElement);
+    if (sigElement && graphContainer && threshElement) {
+        const signature = extractSignatureString(sigElement);
+        const hasData = signature.length >= 4;
+        const hasThresh = threshElement.textContent?.includes('L2');
+        
+        if (hasData && hasThresh) {
+            initEngine(sigElement);
+        }
     }
 }
 
@@ -215,18 +219,17 @@ chrome.storage.onChanged.addListener((changes) => {
     }
 });
 
-// Watch for DOM changes
-const observer = new MutationObserver(() => {
-    setTimeout(checkAndInit, 100);
-});
+// Robust, multi-layered waiting logic
+const observer = new MutationObserver(checkAndInit);
 observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-// Insistent retry loop for the first 20 seconds
-let retries = 0;
-const insistentInterval = setInterval(() => {
+// Insistent polling until spawned
+const insistentPoll = setInterval(() => {
     checkAndInit();
-    retries++;
-    if (retries > 20 || document.getElementById('dna-pet-instance')) {
-        clearInterval(insistentInterval);
+    if (document.getElementById('dna-pet-instance')) {
+        // We don't clear it because we want to handle profile navigation (SPA)
+        // Actually, let's keep it running but check petExists at start of checkAndInit
     }
 }, 1000);
+
+checkAndInit();
