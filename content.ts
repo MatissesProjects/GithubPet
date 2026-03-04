@@ -218,6 +218,14 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
+    // Repair collection
+    for (const id in petCollection) {
+        if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
+            delete petCollection[id];
+            collectionChanged = true;
+        }
+    }
+
     const monthlySigs: Record<string, { sig: string, year: string }> = {};
     const offset = pastAndToday.length - sigChars.length;
     
@@ -234,17 +242,18 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
             const yearStr = year.toString();
             const key = `${monthName}-${yearStr}`;
             
-            monthlySigs[key] = { 
-                sig: sigChars.slice(0, i + 1).join(''), 
-                year: yearStr 
-            };
+            if (!monthlySigs[key]) monthlySigs[key] = { sig: "", year: yearStr };
+            monthlySigs[key].sig += sigChars[i];
         }
     }
 
     for (const key in monthlySigs) {
         const { sig, year } = monthlySigs[key];
         const monthName = key.split('-')[0];
-        if (sig.length < 4) continue;
+        
+        // UNIQUE IDENTITY: Each month uses its own segment.
+        // Stability is handled by padding in engine.ts (using first 4 chars as genesis).
+        if (sig.length < 4) continue; 
 
         const petId = `${username}-${year}-${monthName}`;
         if (!petCollection[petId] || petCollection[petId].signature !== sig) {
@@ -283,29 +292,15 @@ async function trySpawnCollection() {
     try {
         const result = await chrome.storage.local.get(['petCollection']);
         let collection = result.petCollection || {};
-        let collectionRepaired = false;
-
-        // AGGRESSIVE REPAIR: Purge any 'undefined' or malformed entries from storage
-        for (const id in collection) {
-            if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
-                delete collection[id];
-                collectionRepaired = true;
-            }
-        }
-        if (collectionRepaired) {
-            await chrome.storage.local.set({ petCollection: collection });
-        }
         
-        // 1. Purge DOM of pets that shouldn't be here (including malformed ones)
         const existingPets = document.querySelectorAll('.dna-pet');
         existingPets.forEach(el => {
             const id = el.id.replace('pet-', '');
-            if (id.includes('undefined') || !collection[id] || !collection[id].enabled || collection[id].year !== viewedYear || collection[id].username !== username) {
+            if (!collection[id] || !collection[id].enabled || collection[id].year !== viewedYear || collection[id].username !== username) {
                 el.remove();
             }
         });
 
-        // 2. Spawn valid collection members
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
             if (petData.username === username && petData.enabled && petData.year === viewedYear) {

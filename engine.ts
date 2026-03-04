@@ -53,8 +53,12 @@ export const PET_PARTS: PetParts = {
 };
 
 export function generateProceduralPet(hexString: string): PetState {
-    // Genesis Block is the FIRST 4 chars (stable identity)
-    const genesisHex = hexString.slice(0, 4);
+    // Ensure we have at least 4 chars for a stable seed by padding if necessary
+    let dna = hexString;
+    while (dna.length < 4) dna += (dna.length % 2 === 0 ? "F" : "0"); 
+
+    // Genesis Block is the FIRST 4 chars of the month's DNA
+    const genesisHex = dna.slice(0, 4);
     let seed = parseInt(genesisHex, 16); 
     const rng = seededRandom(seed); 
 
@@ -66,10 +70,8 @@ export function generateProceduralPet(hexString: string): PetState {
         accessory: 'none'
     };
 
-    // The rest is the evolution chain
-    const evolutionChain = hexString.slice(4);
+    const evolutionChain = dna.slice(4);
     
-    // Read chronological (left-to-right)
     for (let i = 0; i < evolutionChain.length; i++) {
         const commitLevel = parseInt(evolutionChain[i], 16); 
         
@@ -81,9 +83,8 @@ export function generateProceduralPet(hexString: string): PetState {
             }
         }
 
-        // Accessories based on specific patterns in the chain
         if (commitLevel === 10 && petVisuals.accessory === 'none') {
-            const accRng = seededRandom(seed * i);
+            const accRng = seededRandom(seed * (i + 1));
             petVisuals.accessory = pickRandom(PET_PARTS.accessories, accRng);
         }
     }
