@@ -1,5 +1,24 @@
-// --- 1. SEEDED PRNG ---
-function seededRandom(seed) {
+// --- 1. TYPES ---
+export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider';
+export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow';
+export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes';
+
+export interface PetState {
+    body: PetBody;
+    color: string;
+    aura: PetAura;
+    mutations: PetMutation[];
+}
+
+export interface PetParts {
+    bodies: PetBody[];
+    colors: string[];
+    auras: PetAura[];
+    mutations: PetMutation[];
+}
+
+// --- 2. SEEDED PRNG ---
+export function seededRandom(seed: number): () => number {
     return function() {
         var t = seed += 0x6D2B79F5;
         t = Math.imul(t ^ t >>> 15, t | 1);
@@ -8,24 +27,24 @@ function seededRandom(seed) {
     }
 }
 
-function pickRandom(array, randomFunc) {
+export function pickRandom<T>(array: T[], randomFunc: () => number): T {
     return array[Math.floor(randomFunc() * array.length)];
 }
 
-// --- 2. PROCEDURAL ENGINE ---
-const PET_PARTS = {
+// --- 3. PROCEDURAL ENGINE ---
+export const PET_PARTS: PetParts = {
     bodies: ['slime', 'cube', 'wisp', 'mecha-spider'],
     colors: ['#FF0055', '#00FFCC', '#FFDD00', '#B000FF'],
     auras: ['none', 'fire', 'digital-glitch', 'shadow'],
     mutations: ['horns', 'halo', 'bat-wings', 'spikes']
 };
 
-function generateProceduralPet(hexString) {
+export function generateProceduralPet(hexString: string): PetState {
     const genesisHex = hexString.slice(-4);
     let seed = parseInt(genesisHex, 16); 
     const rng = seededRandom(seed); 
 
-    let petVisuals = {
+    let petVisuals: PetState = {
         body: pickRandom(PET_PARTS.bodies, rng),
         color: pickRandom(PET_PARTS.colors, rng),
         aura: 'none',
@@ -48,9 +67,4 @@ function generateProceduralPet(hexString) {
         }
     }
     return petVisuals;
-}
-
-// Export for Node if needed (for tests)
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = { generateProceduralPet, seededRandom, pickRandom, PET_PARTS };
 }

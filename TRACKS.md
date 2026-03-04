@@ -23,3 +23,10 @@
 ### Track 4: Polishing & Portability
 - [x] Add a popup toggle (`popup.html`) to disable the pet on certain profiles.
 - [x] Refactor the core engine into a pure JS module so the procedural generation logic can be easily lifted into an external web app or stream widget later.
+
+### Track 5: TypeScript Migration & Testing
+- [x] Initialize TypeScript environment (`tsconfig.json`).
+- [x] Migrate `engine.js` to `engine.ts` with full typing.
+- [x] Migrate `content.js` and `popup.js` to TS.
+- [x] Set up a build/bundle step (e.g., `esbuild` or `tsc`) to output JS for the extension.
+- [x] Implement unit tests (using `jest` or similar since Bun is unavailable).

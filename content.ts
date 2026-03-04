@@ -1,13 +1,15 @@
+import { generateProceduralPet, PetState } from './engine';
+
 // --- 3. EXTRACTION & OBSERVER ---
-function extractSignatureString(containerElement) {
+function extractSignatureString(containerElement: HTMLElement): string {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
     let hexString = '';
-    charSpans.forEach(span => hexString += span.textContent.trim());
+    charSpans.forEach(span => hexString += span.textContent?.trim() || '');
     return hexString;
 }
 
-function spawnPet(petState) {
-    const graphContainer = document.querySelector('.js-calendar-graph');
+function spawnPet(petState: PetState): void {
+    const graphContainer = document.querySelector('.js-calendar-graph') as HTMLElement;
     if (!graphContainer) {
         console.error("Contribution graph not found!");
         return;
@@ -48,14 +50,14 @@ function spawnPet(petState) {
     startPatrol(pet);
 }
 
-function startPatrol(petElement) {
+function startPatrol(petElement: HTMLElement): void {
     const days = document.querySelectorAll('rect.ContributionCalendar-day');
     if (days.length === 0) return;
 
     function moveToRandomDay() {
-        const randomDay = days[Math.floor(Math.random() * days.length)];
+        const randomDay = days[Math.floor(Math.random() * days.length)] as SVGRectElement;
         const rect = randomDay.getBoundingClientRect();
-        const containerRect = petElement.parentElement.getBoundingClientRect();
+        const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
         const x = rect.left - containerRect.left + (rect.width / 2) - 10;
         const y = rect.top - containerRect.top + (rect.height / 2) - 10;
@@ -71,7 +73,7 @@ function startPatrol(petElement) {
     setInterval(moveToRandomDay, 3000);
 }
 
-async function initEngine(containerElement) {
+async function initEngine(containerElement: HTMLElement): Promise<void> {
     const username = window.location.pathname.split('/')[1];
     const { blacklist = [] } = await chrome.storage.local.get('blacklist');
     
@@ -87,7 +89,7 @@ async function initEngine(containerElement) {
     spawnPet(petState);
 }
 
-const observer = new MutationObserver((mutations, obs) => {
+const observer = new MutationObserver((_mutations, obs) => {
     const sigElement = document.getElementById('gh-pulse-signature');
     if (sigElement) {
         obs.disconnect(); 
