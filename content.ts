@@ -1,6 +1,8 @@
 import { generateProceduralPet, PetState } from './engine';
 
 // --- 3. EXTRACTION & OBSERVER ---
+let isInitializing = false;
+
 function extractSignatureString(containerElement: HTMLElement): string {
     const charSpans = containerElement.querySelectorAll('.gh-sig-char');
     let hexString = '';
@@ -32,22 +34,19 @@ function getActiveUsername(): string | null {
 function getL2Threshold(): number {
     const threshEl = document.querySelector('.gh-thresh-3');
     if (threshEl && threshEl.textContent) {
-        // Matches "L2: 5-10" and takes 5
         const match = threshEl.textContent.match(/L2:\s*(\d+)/i);
         if (match) return parseInt(match[1], 10);
     }
-    return 2; // Default fallback
+    return 2;
 }
 
 function getCommitCount(day: HTMLElement): number {
-    // Try to find count in aria-label (e.g., "5 contributions on...")
     const label = day.getAttribute('aria-label');
     if (label) {
         const match = label.match(/^(\d+)/);
         if (match) return parseInt(match[1], 10);
         if (label.toLowerCase().includes('no contribution')) return 0;
     }
-    // Fallback to data-level if count isn't parseable
     return parseInt(day.getAttribute('data-level') || '0', 10);
 }
 
@@ -70,16 +69,12 @@ function spawnPet(petState: PetState): void {
     visual.className = `pet-visual body-${petState.body}`;
     visual.style.setProperty('--pet-color', petState.color);
     
-    if (petState.aura !== 'none') {
-        visual.classList.add(`aura-${petState.aura}`);
-    }
-
+    if (petState.aura !== 'none') visual.classList.add(`aura-${petState.aura}`);
     petState.mutations.forEach(mut => {
         const mutEl = document.createElement('div');
         mutEl.className = `pet-mutation mut-${mut}`;
         visual.appendChild(mutEl);
     });
-
     if (petState.accessory !== 'none') {
         const accEl = document.createElement('div');
         accEl.className = `pet-accessory acc-${petState.accessory}`;
@@ -92,17 +87,11 @@ function spawnPet(petState: PetState): void {
     eyes.className = 'pet-eyes';
     face.appendChild(eyes);
     visual.appendChild(face);
-
     container.appendChild(visual);
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
-    tooltip.innerHTML = `
-        <strong>DNA Pet</strong><br>
-        Type: ${petState.body}<br>
-        ${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}
-        Mutations: ${petState.mutations.join(', ') || 'None'}
-    `;
+    tooltip.innerHTML = `<strong>DNA Pet</strong><br>Type: ${petState.body}<br>${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}Mutations: ${petState.mutations.join(', ') || 'None'}`;
     container.appendChild(tooltip);
 
     const speech = document.createElement('div');
@@ -120,14 +109,12 @@ function startPatrol(petElement: HTMLElement): void {
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
     if (allDays.length === 0) return;
 
-    const now = new Date();
     const futureLimit = new Date();
-    futureLimit.setMonth(now.getMonth() + 2);
+    futureLimit.setMonth(new Date().getMonth() + 2);
 
     const patrolPool = allDays.filter(day => {
         const dateStr = day.getAttribute('data-date');
-        if (!dateStr) return true;
-        return new Date(dateStr) <= futureLimit;
+        return !dateStr || new Date(dateStr) <= futureLimit;
     });
 
     const moodPhrases: Record<string, string[]> = {
@@ -148,7 +135,6 @@ function startPatrol(petElement: HTMLElement): void {
         
         petElement.classList.remove('mood-scared', 'mood-happy', 'mood-ecstatic');
         let currentMood = 'happy';
-
         if (count === 0) {
             petElement.classList.add('mood-scared');
             currentMood = 'scared';
@@ -157,9 +143,6 @@ function startPatrol(petElement: HTMLElement): void {
             currentMood = 'ecstatic';
         } else if (count >= l2Threshold) {
             petElement.classList.add('mood-happy');
-            currentMood = 'happy';
-        } else {
-            // "Neutral" but we'll use happy visuals without the bonus effects
             currentMood = 'happy';
         }
 
@@ -187,20 +170,41 @@ function startPatrol(petElement: HTMLElement): void {
 }
 
 async function initEngine(sigElement: HTMLElement): Promise<void> {
-    const username = getActiveUsername();
-    if (!username) return;
+    if (isInitializing) return;
+    isInitializing = true;
 
-    const { blacklist = [] } = await (chrome.storage.local.get('blacklist') as any);
-    if (blacklist.includes(username)) {
-        const existing = document.getElementById('dna-pet-instance');
-        if (existing) existing.remove();
-        return;
+    try {
+        const username = getActiveUsername();
+        if (!username) return;
+
+        const { blacklist = [] } = await (chrome.storage.local.get('blacklist') as any);
+        if (blacklist.includes(username)) {
+            const existing = document.getElementById('dna-pet-instance');
+            if (existing) existing.remove();
+            return;
+        }
+
+        const signature = extractSignatureString(sigElement);
+        if (!signature || signature.length < 4) return;
+
+        spawnPet(generateProceduralPet(signature));
+    } finally {
+        isInitializing = false;
     }
+}
 
-    const signature = extractSignatureString(sigElement);
-    if (!signature || signature.length < 4) return;
-
-    spawnPet(generateProceduralPet(signature));
+function checkAndInit() {
+    const sigElement = document.getElementById('gh-pulse-signature');
+    const graphContainer = document.querySelector('.js-calendar-graph');
+    const threshElement = document.querySelector('.gh-thresh-3');
+    const petExists = document.getElementById('dna-pet-instance');
+    
+    // Ensure the signature actually has characters loaded
+    const hasChars = sigElement && sigElement.querySelectorAll('.gh-sig-char').length >= 4;
+    
+    if (sigElement && graphContainer && threshElement && hasChars && !petExists) {
+        initEngine(sigElement);
+    }
 }
 
 chrome.storage.onChanged.addListener((changes) => {
@@ -210,16 +214,8 @@ chrome.storage.onChanged.addListener((changes) => {
     }
 });
 
-const observer = new MutationObserver(() => {
-    const sigElement = document.getElementById('gh-pulse-signature');
-    const graphContainer = document.querySelector('.js-calendar-graph');
-    const threshElement = document.querySelector('.gh-thresh-3');
-    const petExists = document.getElementById('dna-pet-instance');
-    
-    // Wait for all external dependencies to be ready
-    if (sigElement && graphContainer && threshElement && !petExists) {
-        initEngine(sigElement);
-    }
-});
+const observer = new MutationObserver(checkAndInit);
+observer.observe(document.body, { childList: true, subtree: true, characterData: true });
 
-observer.observe(document.body, { childList: true, subtree: true });
+// Initial trigger
+checkAndInit();
