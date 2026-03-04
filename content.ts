@@ -29,6 +29,28 @@ function getActiveUsername(): string | null {
     return null;
 }
 
+function getL2Threshold(): number {
+    const threshEl = document.querySelector('.gh-thresh-3');
+    if (threshEl && threshEl.textContent) {
+        // Matches "L2: 5-10" and takes 5
+        const match = threshEl.textContent.match(/L2:\s*(\d+)/i);
+        if (match) return parseInt(match[1], 10);
+    }
+    return 2; // Default fallback
+}
+
+function getCommitCount(day: HTMLElement): number {
+    // Try to find count in aria-label (e.g., "5 contributions on...")
+    const label = day.getAttribute('aria-label');
+    if (label) {
+        const match = label.match(/^(\d+)/);
+        if (match) return parseInt(match[1], 10);
+        if (label.toLowerCase().includes('no contribution')) return 0;
+    }
+    // Fallback to data-level if count isn't parseable
+    return parseInt(day.getAttribute('data-level') || '0', 10);
+}
+
 function spawnPet(petState: PetState): void {
     const existingPet = document.getElementById('dna-pet-instance');
     if (existingPet) existingPet.remove();
@@ -40,12 +62,10 @@ function spawnPet(petState: PetState): void {
     container.id = 'dna-pet-instance';
     container.className = `dna-pet`;
 
-    // Shadow
     const shadow = document.createElement('div');
     shadow.className = 'pet-shadow';
     container.appendChild(shadow);
 
-    // Visual Body
     const visual = document.createElement('div');
     visual.className = `pet-visual body-${petState.body}`;
     visual.style.setProperty('--pet-color', petState.color);
@@ -54,21 +74,18 @@ function spawnPet(petState: PetState): void {
         visual.classList.add(`aura-${petState.aura}`);
     }
 
-    // Mutations Slot
     petState.mutations.forEach(mut => {
         const mutEl = document.createElement('div');
         mutEl.className = `pet-mutation mut-${mut}`;
         visual.appendChild(mutEl);
     });
 
-    // Accessory Slot
     if (petState.accessory !== 'none') {
         const accEl = document.createElement('div');
         accEl.className = `pet-accessory acc-${petState.accessory}`;
         visual.appendChild(accEl);
     }
 
-    // Eyes & Face
     const face = document.createElement('div');
     face.className = 'pet-face';
     const eyes = document.createElement('div');
@@ -125,19 +142,24 @@ function startPatrol(petElement: HTMLElement): void {
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
+        const count = getCommitCount(targetDay);
+        const l2Threshold = getL2Threshold();
         const level = parseInt(targetDay.getAttribute('data-level') || '0', 10);
         
-        // Update Mood
         petElement.classList.remove('mood-scared', 'mood-happy', 'mood-ecstatic');
         let currentMood = 'happy';
-        if (level === 0) {
+
+        if (count === 0) {
             petElement.classList.add('mood-scared');
             currentMood = 'scared';
         } else if (level >= 3) {
             petElement.classList.add('mood-ecstatic');
             currentMood = 'ecstatic';
-        } else {
+        } else if (count >= l2Threshold) {
             petElement.classList.add('mood-happy');
+            currentMood = 'happy';
+        } else {
+            // "Neutral" but we'll use happy visuals without the bonus effects
             currentMood = 'happy';
         }
 
@@ -191,8 +213,11 @@ chrome.storage.onChanged.addListener((changes) => {
 const observer = new MutationObserver(() => {
     const sigElement = document.getElementById('gh-pulse-signature');
     const graphContainer = document.querySelector('.js-calendar-graph');
+    const threshElement = document.querySelector('.gh-thresh-3');
     const petExists = document.getElementById('dna-pet-instance');
-    if (sigElement && graphContainer && !petExists) {
+    
+    // Wait for all external dependencies to be ready
+    if (sigElement && graphContainer && threshElement && !petExists) {
         initEngine(sigElement);
     }
 });
