@@ -2,23 +2,23 @@
   "name": "githubpet",
   "version": "1.0.0",
   "description": "",
+  "type": "module",
   "main": "dist/content.js",
   "scripts": {
-    "build": "esbuild content.ts popup.ts --bundle --outdir=dist && node build-assets.js",
-    "test": "jest"
+    "build": "esbuild content.ts popup.ts --bundle --outdir=dist --format=esm && node build-assets.js",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "devDependencies": {
-    "@types/chrome": "^0.1.37",
-    "@types/jest": "^30.0.0",
-    "@types/node": "^25.3.3",
-    "esbuild": "^0.27.3",
-    "jest": "^30.2.0",
-    "ts-jest": "^29.4.6",
+    "@types/chrome": "^0.0.307",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.5",
+    "esbuild": "^0.25.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.2.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5.9.3"
+    "typescript": "^5.7.3"
   }
 }
