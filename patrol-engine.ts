@@ -49,18 +49,25 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
-        // 1. EXTRACTION: Get computed color reliably
+        // 1. DYNAMIC GLOW: Extract color from square
         const style = window.getComputedStyle(targetDay);
-        const squareColor = style.fill !== 'none' ? style.fill : style.backgroundColor;
+        const squareColor = style.fill !== 'none' && style.fill !== 'rgba(0, 0, 0, 0)' ? style.fill : style.backgroundColor;
 
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
-            // 2. EATING EFFECT: Pulse and Glow
-            visual.style.boxShadow = `0 0 20px 5px ${squareColor}`;
+            // Apply glow with !important via setProperty
+            visual.style.setProperty('box-shadow', `0 0 20px 5px ${squareColor}`, 'important');
             
-            // Add a temporary "eat" class for animation
+            // Pulse effect
             petElement.classList.add('is-eating');
-            setTimeout(() => petElement.classList.remove('is-eating'), 1000);
+            setTimeout(() => petElement.classList.remove('is-eating'), 800);
+        }
+
+        // 2. WINKING LOGIC
+        const eyes = petElement.querySelector('.pet-eyes') as HTMLElement;
+        if (eyes && Math.random() > 0.7) {
+            eyes.classList.add('is-winking');
+            setTimeout(() => eyes.classList.remove('is-winking'), 500);
         }
 
         const count = getCommitCount(targetDay);
