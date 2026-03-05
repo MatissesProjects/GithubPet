@@ -49,19 +49,13 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
-        // 1. COLOR MIMICRY: Extract exactly what the other extension loaded
+        // 1. EXTRACT SQUARE COLOR
         const style = window.getComputedStyle(targetDay);
-        // Prioritize fill (often used by extensions for SVG) then background
-        const squareColor = (style.fill && style.fill !== 'none' && !style.fill.includes('rgba(0, 0, 0, 0)')) 
-            ? style.fill 
-            : style.backgroundColor;
+        const squareColor = style.fill !== 'none' && style.fill !== 'rgba(0, 0, 0, 0)' ? style.fill : style.backgroundColor;
 
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
-            // Update pet's core color to the square's color
-            petElement.style.setProperty('--pet-color', squareColor);
-            
-            // Apply "Eating" glow effect
+            // 2. DYNAMIC GLOW ONLY (Leave --pet-color alone so body stays DNA color)
             visual.style.setProperty('box-shadow', `0 0 25px 8px ${squareColor}`, 'important');
             
             // Pulse animation trigger
@@ -71,9 +65,9 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
             setTimeout(() => petElement.classList.remove('is-eating'), 1000);
         }
 
-        // 2. WINKING
+        // 3. WINKING
         const eyes = petElement.querySelector('.pet-eyes') as HTMLElement;
-        if (eyes && Math.random() > 0.8) {
+        if (eyes && Math.random() > 0.85) {
             eyes.classList.add('is-winking');
             setTimeout(() => eyes.classList.remove('is-winking'), 600);
         }
