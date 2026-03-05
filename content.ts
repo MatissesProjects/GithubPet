@@ -84,15 +84,19 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     }
 
     const now = new Date();
-    const currentMonthName = monthNames[now.getMonth()];
+    const currentMonthIndex = now.getMonth();
     const currentYearStr = now.getFullYear().toString();
 
     for (const key in monthlySigs) {
         const { sig, year } = monthlySigs[key];
         const monthName = key.split('-')[0];
+        const monthIndex = monthNames.indexOf(monthName);
         
-        // Only keep pets for months that have passed or the current month
-        // AND ensure they have enough DNA
+        // Only keep pets for months that have passed or the current month in the current year
+        // Previous years show all months.
+        if (year === currentYearStr && monthIndex > currentMonthIndex) continue;
+
+        // Ensure they have enough DNA
         if (sig.length < 2) continue; 
 
         const petId = `${username}-${year}-${monthName}`;
