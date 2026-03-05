@@ -57,7 +57,8 @@ describe('Procedural Engine', () => {
     test('should pick valid parts from PET_PARTS', () => {
         const pet = generateProceduralPet("ABCDEF123456");
         expect(PET_PARTS.bodies).toContain(pet.body);
-        expect(PET_PARTS.colors).toContain(pet.color);
+        const allPossibleColors = [...PET_PARTS.colors, ...PET_PARTS.premiumColors];
+        expect(allPossibleColors).toContain(pet.color);
         expect(PET_PARTS.patterns).toContain(pet.pattern);
     });
 

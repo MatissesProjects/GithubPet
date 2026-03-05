@@ -43,11 +43,12 @@ describe('Patrol Engine', () => {
         // Future limit is March 8 (+4 days)
         const realDate = Date;
         global.Date = class extends realDate {
-            constructor() {
-                super();
-                return new realDate('2026-03-04');
+            constructor(...args: any[]) {
+                if (args.length > 0) return new (realDate as any)(...args);
+                return new realDate(2026, 2, 4);
             }
         } as any;
+        global.Date.now = () => new realDate(2026, 2, 4).getTime();
 
         const pool = getPatrolPool(mockDays, "Mar", "2026");
         const dates = pool.map(d => d.getAttribute('data-date'));
