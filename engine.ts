@@ -6,7 +6,7 @@ export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' 
 export type PetMutation = 
     'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna' | 
     'shield' | 'sword' | 'magic-wand' | 'wiggle' | 'angel-wings' | 'demon-wings' | 
-    'third-eye' | 'hover-bots' | 'leafy-tail' | 'gem-core';
+    'third-eye' | 'hover-bots' | 'leafy-tail' | 'gem-core' | 'beard' | 'mustache';
 export type PetAccessory = 
     'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape' | 'crown' | 
     'monocle' | 'headphones' | 'backpack' | 'wizard-hat' | 'viking-helmet' | 
@@ -71,7 +71,6 @@ function hashString(str: string): number {
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
     bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud', 'ghost', 'dragon-egg'],
-    // UPDATED: Bright, vibrant palette (removed dark grays/blacks)
     colors: [
         '#FF3388', '#33FFCC', '#FFDD00', '#CC66FF', 
         '#FF8833', '#88FF33', '#33CCFF', '#FF33FF',
@@ -79,7 +78,7 @@ export const PET_PARTS: PetParts = {
         '#FF99AA', '#99FFCC', '#FFEE99', '#CC99FF'
     ],
     auras: ['none', 'fire', 'digital-glitch', 'shadow', 'rainbow', 'stars', 'rain', 'plasma', 'leaves', 'void', 'nebula'],
-    mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna', 'shield', 'sword', 'magic-wand', 'wiggle', 'angel-wings', 'demon-wings', 'third-eye', 'hover-bots', 'leafy-tail', 'gem-core'],
+    mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna', 'shield', 'sword', 'magic-wand', 'wiggle', 'angel-wings', 'demon-wings', 'third-eye', 'hover-bots', 'leafy-tail', 'gem-core', 'beard', 'mustache'],
     accessories: ['none', 'hat', 'scarf', 'glasses', 'tie', 'cape', 'crown', 'monocle', 'headphones', 'backpack', 'wizard-hat', 'viking-helmet', 'detective-pipe', 'flower', 'cyber-mask'],
     patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit', 'honeycomb', 'star-field', 'waves', 'lava', 'glitch-static']
 };
@@ -116,15 +115,17 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         evolutionTier
     };
 
-    // Evolution logic (guaranteed complexity traits)
-    const activeDNA = dna.length > 0 ? dna : "0000";
-    
-    for (let i = 0; i < activeDNA.length; i++) {
-        const commitLevel = parseInt(activeDNA[i], 16); 
+    // 1. Guaranteed "Genesis Mutation" so even empty months have a shape change
+    const genRng = seededRandom(finalSeed + 999);
+    petVisuals.mutations.push(pickRandom(PET_PARTS.mutations, genRng));
+
+    // 2. Evolution chain logic (More aggressive)
+    for (let i = 0; i < dna.length; i++) {
+        const commitLevel = parseInt(dna[i], 16); 
         if (isNaN(commitLevel)) continue;
 
-        // More mutations based on complexity
-        if (commitLevel >= 12 || (i < complexity)) {
+        // Higher commit days trigger modifications
+        if (commitLevel >= 10 || (i < complexity)) {
             const mRng = seededRandom(finalSeed + i + 1);
             const newMutation = pickRandom(PET_PARTS.mutations, mRng);
             if (!petVisuals.mutations.includes(newMutation)) {
@@ -132,7 +133,7 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
             }
         }
 
-        if (commitLevel === 11 && petVisuals.accessory === 'none') {
+        if (commitLevel >= 8 && petVisuals.accessory === 'none') {
             const aRng = seededRandom(finalSeed + i + 2);
             petVisuals.accessory = pickRandom(PET_PARTS.accessories, aRng);
         }
@@ -143,10 +144,10 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         }
     }
 
+    // Complexity Overrides
     if (complexity >= 3 && petVisuals.accessory === 'none') {
         petVisuals.accessory = pickRandom(PET_PARTS.accessories.filter(a => a !== 'none'), rng);
     }
-
     if (complexity >= 4 && petVisuals.aura === 'none') {
         petVisuals.aura = pickRandom(PET_PARTS.auras.filter(a => a !== 'none'), rng);
     }
