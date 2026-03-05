@@ -48,23 +48,23 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const currentMonthIndex = now.getMonth();
     const currentYearStr = now.getFullYear().toString();
     
-    const pastAndToday = allDays.filter(day => {
+    const yearDays = allDays.filter(day => {
         const dateStr = day.getAttribute('data-date');
         if (!dateStr) return false;
-        return dateStr.startsWith(viewedYear) && new Date(dateStr) <= now;
+        return dateStr.startsWith(viewedYear);
     });
 
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
     const monthlySigs: Record<string, { sig: string, year: string }> = {};
-    const offset = pastAndToday.length - cleanSigs.length;
+    const offset = yearDays.length - cleanSigs.length;
     
     for (let i = 0; i < cleanSigs.length; i++) {
         const dayIndex = i + offset;
-        if (dayIndex < 0 || dayIndex >= pastAndToday.length) continue;
+        if (dayIndex < 0 || dayIndex >= yearDays.length) continue;
 
-        const dateStr = pastAndToday[dayIndex].getAttribute('data-date');
+        const dateStr = yearDays[dayIndex].getAttribute('data-date');
         if (dateStr) {
             const { month, year } = parseDateParts(dateStr);
             const monthName = monthNames[month];
@@ -74,7 +74,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
             const key = `${monthName}-${yearStr}`;
             
             if (!monthlySigs[key]) monthlySigs[key] = { sig: "", year: yearStr };
-            // Correct: ONLY add the char for this specific month
             monthlySigs[key].sig += cleanSigs[i];
         }
     }
@@ -84,7 +83,10 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         const monthName = key.split('-')[0];
         const monthIndex = monthNames.indexOf(monthName);
         
+        // LIMIT: Only past/current months for CURRENT year. 
+        // All months for PREVIOUS years.
         if (year === currentYearStr && monthIndex > currentMonthIndex) continue;
+
         if (sig.length < 2) continue; 
 
         const petId = `${username}-${year}-${monthName}`;
@@ -126,11 +128,20 @@ async function trySpawnCollection() {
         let collection = result.petCollection || {};
         let collectionRepaired = false;
 
-        // AGGRESSIVE REPAIR: Purge any 'undefined', 'Unknown', or invalid months
+        const currentMonthIndex = new Date().getMonth();
+        const currentYearStr = new Date().getFullYear().toString();
+
         for (const id in collection) {
             const parts = id.split('-');
+            const year = parts[1];
             const monthName = parts[2];
-            if (id.includes('undefined') || id.includes('Unknown') || parts.length < 3 || !monthNames.includes(monthName)) {
+            const monthIndex = monthNames.indexOf(monthName);
+
+            // AGGRESSIVE REPAIR: Purge undefined, malformed, or FUTURE months
+            const isMalformed = id.includes('undefined') || id.includes('Unknown') || parts.length < 3 || monthIndex === -1;
+            const isFuture = (year === currentYearStr && monthIndex > currentMonthIndex);
+
+            if (isMalformed || isFuture) {
                 delete collection[id];
                 collectionRepaired = true;
             }

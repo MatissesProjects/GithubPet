@@ -79,22 +79,19 @@ export const PET_PARTS: PetParts = {
 const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
-    let dna = hexString;
-    // Pad DNA if too short
-    while (dna.length < 8) dna += "F"; 
-
-    // Better seed combination: Hash the signature + salt string entirely
-    const seedInput = dna + salt;
-    const finalSeed = hashString(seedInput);
+    const dna = hexString;
+    
+    // Final seed incorporates DNA + Salt for high uniqueness
+    const finalSeed = hashString(dna + salt);
     const rng = seededRandom(finalSeed); 
 
-    const evolutionChain = dna.slice(4);
     let totalCommits = 0;
-    for (const char of evolutionChain) {
+    for (const char of dna) {
         const val = parseInt(char, 16);
         if (!isNaN(val)) totalCommits += val;
     }
     
+    // Complexity 0-5 based on actual activity
     const complexity = Math.min(5, Math.floor(totalCommits / 15));
 
     const title = `${pickRandom(TITLES.prefixes, rng)} ${pickRandom(TITLES.suffixes, rng)}`;
@@ -112,13 +109,14 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         title
     };
 
-    // Evolution
-    for (let i = 0; i < evolutionChain.length; i++) {
-        const commitLevel = parseInt(evolutionChain[i], 16); 
+    // Evolution only based on ACTUAL available hex chars
+    for (let i = 0; i < dna.length; i++) {
+        const commitLevel = parseInt(dna[i], 16); 
         if (isNaN(commitLevel)) continue;
 
-        if (commitLevel >= 12) {
-            const mRng = seededRandom(finalSeed + i + commitLevel);
+        // Higher commit days trigger modifications
+        if (commitLevel >= 13) {
+            const mRng = seededRandom(finalSeed + i + 1);
             const newMutation = pickRandom(PET_PARTS.mutations, mRng);
             if (!petVisuals.mutations.includes(newMutation)) {
                 petVisuals.mutations.push(newMutation);
@@ -126,16 +124,17 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         }
 
         if (commitLevel === 11 && petVisuals.accessory === 'none') {
-            const aRng = seededRandom(finalSeed * (i + 5));
+            const aRng = seededRandom(finalSeed + i + 2);
             petVisuals.accessory = pickRandom(PET_PARTS.accessories, aRng);
         }
 
         if (commitLevel === 15 && petVisuals.aura === 'none') {
-            const auRng = seededRandom(finalSeed + i + 100);
+            const auRng = seededRandom(finalSeed + i + 3);
             petVisuals.aura = pickRandom(PET_PARTS.auras, auRng);
         }
     }
 
+    // High complexity grants a guaranteed aura if missing
     if (complexity >= 4 && petVisuals.aura === 'none') {
         petVisuals.aura = pickRandom(PET_PARTS.auras.filter(a => a !== 'none'), rng);
     }
