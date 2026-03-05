@@ -71,12 +71,12 @@ function hashString(str: string): number {
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
     bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud', 'ghost', 'dragon-egg'],
+    // UPDATED: Bright, vibrant palette (removed dark grays/blacks)
     colors: [
-        '#FF0055', '#00FFCC', '#FFDD00', '#B000FF', 
-        '#FF5500', '#55FF00', '#00AAFF', '#FF00FF',
-        '#FFFFFF', '#444444', '#FF9900', '#00FF00',
-        '#E74C3C', '#3498DB', '#F1C40F', '#9B59B6',
-        '#1ABC9C', '#2ECC71', '#34495E', '#7F8C8D'
+        '#FF3388', '#33FFCC', '#FFDD00', '#CC66FF', 
+        '#FF8833', '#88FF33', '#33CCFF', '#FF33FF',
+        '#FFFFFF', '#FFCC66', '#66FF66', '#66CCFF',
+        '#FF99AA', '#99FFCC', '#FFEE99', '#CC99FF'
     ],
     auras: ['none', 'fire', 'digital-glitch', 'shadow', 'rainbow', 'stars', 'rain', 'plasma', 'leaves', 'void', 'nebula'],
     mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna', 'shield', 'sword', 'magic-wand', 'wiggle', 'angel-wings', 'demon-wings', 'third-eye', 'hover-bots', 'leafy-tail', 'gem-core'],
@@ -116,21 +116,17 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         evolutionTier
     };
 
-    // Evolution
-    for (let i = 0; i < dna.length; i++) {
-        const commitLevel = parseInt(dna[i], 16); 
+    // Evolution logic (guaranteed complexity traits)
+    const activeDNA = dna.length > 0 ? dna : "0000";
+    
+    for (let i = 0; i < activeDNA.length; i++) {
+        const commitLevel = parseInt(activeDNA[i], 16); 
         if (isNaN(commitLevel)) continue;
 
-        // Higher commit days trigger modifications
-        if (commitLevel >= 12) {
+        // More mutations based on complexity
+        if (commitLevel >= 12 || (i < complexity)) {
             const mRng = seededRandom(finalSeed + i + 1);
-            let mutationList = [...PET_PARTS.mutations];
-            
-            // Tiered mutations
-            if (commitLevel === 14) mutationList.push('demon-wings', 'angel-wings');
-            if (complexity === 5) mutationList.push('hover-bots');
-
-            const newMutation = pickRandom(mutationList, mRng);
+            const newMutation = pickRandom(PET_PARTS.mutations, mRng);
             if (!petVisuals.mutations.includes(newMutation)) {
                 petVisuals.mutations.push(newMutation);
             }
@@ -145,6 +141,10 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
             const auRng = seededRandom(finalSeed + i + 3);
             petVisuals.aura = pickRandom(PET_PARTS.auras, auRng);
         }
+    }
+
+    if (complexity >= 3 && petVisuals.accessory === 'none') {
+        petVisuals.accessory = pickRandom(PET_PARTS.accessories.filter(a => a !== 'none'), rng);
     }
 
     if (complexity >= 4 && petVisuals.aura === 'none') {
