@@ -1,4 +1,5 @@
 import { PetState } from './engine.js';
+import { monthNames } from './config.js';
 
 export function createPetElement(petState: PetState, petId: string): HTMLElement {
     const container = document.createElement('div');
@@ -51,21 +52,43 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     
     // Tooltip
     const idParts = petId.split('-');
-    const month = idParts[2] || "???";
-    const year = idParts[1] || "???";
-    const label = `${month} ${year}`;
+    const monthName = idParts[2] || "???";
+    const yearStr = idParts[1] || "???";
+    const label = `${monthName} ${yearStr}`;
 
-    // Evolution Hint Logic
-    const nextTierDna = (petState.evolutionTier + 1) * 10;
-    const dnaProgress = Math.min(100, (petState.dnaLength / nextTierDna) * 100);
-    const tierHint = petState.evolutionTier < 3 
-        ? `Next Tier at ${nextTierDna} days (Current: ${petState.dnaLength})`
-        : "Max Evolution Tier Reached!";
+    const now = new Date();
+    const currentMonthName = monthNames[now.getMonth()];
+    const currentYearStr = now.getFullYear().toString();
+    const isCurrentMonth = (monthName === currentMonthName && yearStr === currentYearStr);
 
-    const nextComplexityCommits = (petState.complexity + 1) * 15;
-    const complexityHint = petState.complexity < 5
-        ? `More complexity at ${nextComplexityCommits} total commits (Current: ${petState.totalCommits})`
-        : "Max Complexity Reached!";
+    let statContent = "";
+    if (isCurrentMonth) {
+        const nextTierDna = (petState.evolutionTier + 1) * 10;
+        const tierHint = petState.evolutionTier < 3 
+            ? `Next Tier at ${nextTierDna} days (Current: ${petState.dnaLength})`
+            : "Max Evolution Tier Reached!";
+
+        const nextComplexityCommits = (petState.complexity + 1) * 15;
+        const complexityHint = petState.complexity < 5
+            ? `More complexity at ${nextComplexityCommits} total commits (Current: ${petState.totalCommits})`
+            : "Max Complexity Reached!";
+
+        statContent = `
+            Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
+            Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span>
+        `;
+    } else {
+        // Achievements for past pets
+        const achievement = petState.evolutionTier >= 2 ? "🏆 Legendary Growth" : 
+                           petState.complexity >= 4 ? "🌟 Master Artisan" : 
+                           petState.dnaLength >= 20 ? "📅 Dedicated Resident" : "🥚 Early Hatchling";
+        
+        statContent = `
+            <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">${achievement}</div>
+            Final Tier: ${petState.evolutionTier}/3<br>
+            Final Complexity: ${petState.complexity}/5
+        `;
+    }
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
@@ -75,9 +98,8 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
             <small style="color: #8b949e;">Born: ${label}</small>
         </div>
         <div style="text-align: left; margin-bottom: 8px;">
-            <strong>Stats:</strong><br>
-            Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
-            Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span><br>
+            <strong>${isCurrentMonth ? "Active Stats:" : "Achievements:"}</strong><br>
+            ${statContent}
             Personality: ${petState.personality}
         </div>
         <div style="text-align: left; border-top: 1px solid #30363d; padding-top: 5px;">
