@@ -1,10 +1,12 @@
+import { TITLES, PERSONALITY_PHRASES } from './config';
+
 // --- 1. TYPES ---
 export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider' | 'orb' | 'crystal' | 'pyramid' | 'cloud';
 export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' | 'stars' | 'rain' | 'plasma' | 'leaves';
 export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna' | 'shield' | 'sword' | 'magic-wand';
 export type PetAccessory = 'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape' | 'crown' | 'monocle' | 'headphones' | 'backpack';
 export type PetPattern = 'solid' | 'stripes' | 'dots' | 'gradient-shift' | 'circuit' | 'honeycomb' | 'star-field' | 'waves';
-export type PetPersonality = 'stoic' | 'energetic' | 'grumpy' | 'philosophical' | 'anxious' | 'proud';
+export type PetPersonality = keyof typeof PERSONALITY_PHRASES;
 
 export interface PetState {
     body: PetBody;
@@ -16,6 +18,15 @@ export interface PetState {
     complexity: number;
     personality: PetPersonality;
     title: string;
+}
+
+export interface CollectionPet {
+    signature: string;
+    username: string;
+    year: string;
+    month: string;
+    enabled: boolean;
+    addedAt: number;
 }
 
 export interface PetParts {
@@ -65,12 +76,7 @@ export const PET_PARTS: PetParts = {
     patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit', 'honeycomb', 'star-field', 'waves']
 };
 
-const TITLES = {
-    prefixes: ["The Great", "The Ancient", "The Eternal", "The Cosmic", "The Glitched", "The Radiant", "The Shadowed", "The Pixelated"],
-    suffixes: ["Architect", "Voyager", "Sentinel", "Guardian", "Wanderer", "Herald", "Observer", "Anomaly"]
-};
-
-const PERSONALITIES: PetPersonality[] = ['stoic', 'energetic', 'grumpy', 'philosophical', 'anxious', 'proud'];
+const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
     let dna = hexString;
