@@ -5,6 +5,7 @@ import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils';
 export function startPatrol(petElement: HTMLElement, petState: PetState): void {
     const idParts = petElement.id.replace('pet-', '').split('-');
     const targetMonthName = idParts[2];
+    const targetYear = idParts[1];
 
     function moveToRandomDay() {
         if (!petElement.parentElement) return;
@@ -12,43 +13,37 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
         if (allDays.length === 0) return;
 
-        // Restriction: stay within birth month +/- 4 days
+        const now = new Date();
+        const futureLimit = new Date();
+        futureLimit.setDate(now.getDate() + PATROL_CONFIG.futureLimitDays);
+
+        // Find the boundary dates for the target month
+        const targetMonthIndex = monthNames.indexOf(targetMonthName);
+        const yearNum = parseInt(targetYear, 10);
+        
+        const monthStart = new Date(yearNum, targetMonthIndex, 1);
+        const monthEnd = new Date(yearNum, targetMonthIndex + 1, 0);
+
+        // Buffer limits
+        const bufferStart = new Date(monthStart);
+        bufferStart.setDate(bufferStart.getDate() - 4);
+        
+        const bufferEnd = new Date(monthEnd);
+        bufferEnd.setDate(bufferEnd.getDate() + 4);
+
         let patrolPool = allDays.filter(day => {
             const dateStr = day.getAttribute('data-date');
             if (!dateStr) return false;
             
             const date = new Date(dateStr);
-            const { month } = parseDateParts(dateStr);
             
-            // Check if it's the target month
-            if (monthNames[month] === targetMonthName) return true;
+            // 1. Must be within Month +/- 4 days
+            const withinBuffer = date >= bufferStart && date <= bufferEnd;
+            
+            // 2. Must not be beyond the global future limit (4 days from today)
+            const notTooFarFuture = date <= futureLimit;
 
-            // Check if it's within 4 days of the target month
-            // We find the first and last day of the target month in the DOM to check proximity
-            // But a simpler way: if it's NOT the target month, check distance to any day THAT IS the target month
-            // Efficiency: just check if the date is within 4 days of the start or end of the target month.
-            
-            // For simplicity and performance, we'll stick to: 
-            // If it's the month before or after, check date distance.
-            const targetMonthIndex = monthNames.indexOf(targetMonthName);
-            const dist = Math.abs(month - targetMonthIndex);
-            
-            // Handle Dec/Jan wrap around if needed, but usually graph is one year
-            if (dist === 1 || dist === 11) {
-                // Check if it's within 4 days
-                // We'll use a rough estimate or check if the date is near the boundary
-                const dayOfMonth = date.getDate();
-                if (month < targetMonthIndex || (dist === 11 && month === 11)) {
-                    // Month before: must be at the end of the month
-                    const lastDay = new Date(date.getFullYear(), month + 1, 0).getDate();
-                    return dayOfMonth > (lastDay - 4);
-                } else {
-                    // Month after: must be at the start of the month
-                    return dayOfMonth <= 4;
-                }
-            }
-
-            return false;
+            return withinBuffer && notTooFarFuture;
         });
 
         if (patrolPool.length === 0) patrolPool = allDays;
