@@ -1,4 +1,4 @@
-import { PetState } from './engine.js';
+import type { PetState } from './engine.js';
 import { PERSONALITY_PHRASES, PATROL_CONFIG, monthNames } from './config.js';
 import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils.js';
 
@@ -23,7 +23,8 @@ export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, t
         const dateStr = day.getAttribute('data-date');
         if (!dateStr) return false;
         
-        const date = new Date(dateStr);
+        const [y, m, d] = dateStr.split('-').map(v => parseInt(v, 10));
+        const date = new Date(y, m - 1, d);
         const withinBuffer = date >= bufferStart && date <= bufferEnd;
         const notTooFarFuture = date <= futureLimit;
 
@@ -51,13 +52,29 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
 
         // 1. EXTRACT SQUARE COLOR
         const style = window.getComputedStyle(targetDay);
-        const squareColor = style.fill !== 'none' && style.fill !== 'rgba(0, 0, 0, 0)' ? style.fill : style.backgroundColor;
+        const inlineStyle = targetDay.getAttribute('style') || '';
+        
+        const extractColor = (prop: string) => {
+            const match = inlineStyle.match(new RegExp(`${prop}:\\s*(rgb\\([^;!]+?\\))`, 'i'));
+            return match ? match[1].trim() : null;
+        };
+
+        const inlineFill = extractColor('fill');
+        const inlineBg = extractColor('background-color');
+        
+        const squareColor = inlineFill || inlineBg || 
+            (style.fill !== 'none' && style.fill !== 'rgba(0, 0, 0, 0)' ? style.fill : style.backgroundColor);
+
+        // 2. DYNAMIC GLOW (Set on container to avoid clipping and include all parts)
+        // Check if there's an existing hue-rotate from createPetElement
+        const currentFilter = petElement.style.filter || '';
+        const hueRotateMatch = currentFilter.match(/hue-rotate\([^)]+\)/);
+        const hueRotate = hueRotateMatch ? hueRotateMatch[0] : '';
+        
+        petElement.style.setProperty('filter', `${hueRotate} drop-shadow(0 0 12px ${squareColor})`, 'important');
 
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
-            // 2. DYNAMIC GLOW ONLY (Leave --pet-color alone so body stays DNA color)
-            visual.style.setProperty('box-shadow', `0 0 25px 8px ${squareColor}`, 'important');
-            
             // Pulse animation trigger
             petElement.classList.remove('is-eating');
             void petElement.offsetWidth; // Trigger reflow
