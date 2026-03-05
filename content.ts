@@ -1,5 +1,5 @@
 import { generateProceduralPet, PetState, CollectionPet } from './engine';
-import { monthNames, PATROL_CONFIG } from './config';
+import { monthNames } from './config';
 import { 
     extractSignatureChars, 
     forceOverflowVisible, 

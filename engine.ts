@@ -26,6 +26,8 @@ export interface PetState {
     title: string;
     evolutionTier: number;
     colorShift: number; // For hue rotation evolution
+    dnaLength: number;
+    totalCommits: number;
 }
 
 export interface CollectionPet {
@@ -125,7 +127,9 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         personality,
         title,
         evolutionTier,
-        colorShift
+        colorShift,
+        dnaLength: dna.length,
+        totalCommits
     };
 
     // Guaranteed modifications based on Tier

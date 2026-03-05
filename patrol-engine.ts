@@ -113,9 +113,29 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         if (Math.random() > PATROL_CONFIG.speechProbability) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;
             if (speech && petState.personality && PERSONALITY_PHRASES[petState.personality]) {
-                const phrases = PERSONALITY_PHRASES[petState.personality][currentMood];
-                if (phrases) {
-                    speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
+                let phrase = "";
+                
+                // Occasionally show evolution hints instead of personality phrases
+                if (Math.random() > 0.7 && (currentMood === 'happy' || currentMood === 'ecstatic')) {
+                    const nextTierDna = (petState.evolutionTier + 1) * 10;
+                    const nextComplexityCommits = (petState.complexity + 1) * 15;
+                    
+                    if (petState.evolutionTier < 3 && Math.random() > 0.5) {
+                        phrase = `I need ${nextTierDna - petState.dnaLength} more days of commits to grow!`;
+                    } else if (petState.complexity < 5) {
+                        phrase = `Feed me ${nextComplexityCommits - petState.totalCommits} more total commits!`;
+                    }
+                }
+
+                if (!phrase) {
+                    const phrases = PERSONALITY_PHRASES[petState.personality][currentMood];
+                    if (phrases) {
+                        phrase = phrases[Math.floor(Math.random() * phrases.length)];
+                    }
+                }
+
+                if (phrase) {
+                    speech.textContent = phrase;
                     speech.style.display = 'block';
                     setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2500);
                 }

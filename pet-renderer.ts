@@ -54,17 +54,39 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     const month = idParts[2] || "???";
     const year = idParts[1] || "???";
     const label = `${month} ${year}`;
+
+    // Evolution Hint Logic
+    const nextTierDna = (petState.evolutionTier + 1) * 10;
+    const dnaProgress = Math.min(100, (petState.dnaLength / nextTierDna) * 100);
+    const tierHint = petState.evolutionTier < 3 
+        ? `Next Tier at ${nextTierDna} days (Current: ${petState.dnaLength})`
+        : "Max Evolution Tier Reached!";
+
+    const nextComplexityCommits = (petState.complexity + 1) * 15;
+    const complexityHint = petState.complexity < 5
+        ? `More complexity at ${nextComplexityCommits} total commits (Current: ${petState.totalCommits})`
+        : "Max Complexity Reached!";
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
     tooltip.innerHTML = `
-        <strong>${petState.title}</strong><br>
-        Personality: ${petState.personality}<br>
-        Complexity: ${petState.complexity}/5<br>
-        Type: ${petState.body}<br>
-        Pattern: ${petState.pattern}<br>
-        ${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}
-        Mutations: ${petState.mutations.join(', ') || 'None'}
+        <div style="border-bottom: 1px solid #30363d; margin-bottom: 5px; padding-bottom: 5px;">
+            <strong style="color: #58a6ff;">${petState.title}</strong><br>
+            <small style="color: #8b949e;">Born: ${label}</small>
+        </div>
+        <div style="text-align: left; margin-bottom: 8px;">
+            <strong>Stats:</strong><br>
+            Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
+            Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span><br>
+            Personality: ${petState.personality}
+        </div>
+        <div style="text-align: left; border-top: 1px solid #30363d; padding-top: 5px;">
+            <strong>Traits:</strong><br>
+            Type: ${petState.body}<br>
+            Pattern: ${petState.pattern}<br>
+            ${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}
+            Mutations: ${petState.mutations.join(', ') || 'None'}
+        </div>
     `;
     container.appendChild(tooltip);
 

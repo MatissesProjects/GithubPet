@@ -205,6 +205,6 @@
 @keyframes nebula-spin { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 
 /* Tooltip & Speech */
-.dna-pet-tooltip { visibility: hidden; width: 140px; background-color: #0d1117; color: #c9d1d9; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 100000000; bottom: 160%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 11px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.dna-pet-tooltip { visibility: hidden; width: 180px; background-color: #0d1117; color: #c9d1d9; text-align: center; border-radius: 8px; padding: 12px; position: absolute; z-index: 100000000; bottom: 160%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 11px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); line-height: 1.4; }
 .dna-pet:hover .dna-pet-tooltip { visibility: visible; opacity: 1; }
 @keyframes wisp-flicker { from { opacity: 0.8; transform: scale(0.95); } to { opacity: 1; transform: scale(1.05); } }
