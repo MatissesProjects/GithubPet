@@ -38,7 +38,6 @@
     height: 100%;
     animation: pet-idle 3s infinite ease-in-out;
     transition: transform 0.3s, filter 0.3s, box-shadow 0.3s;
-    /* BRIGHTER BASE: Using a radial gradient core + solid fallback */
     background-color: var(--pet-color, #ff3388);
     background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%);
     border: 1px solid rgba(255,255,255,0.4);
@@ -59,7 +58,12 @@
     50% { transform: rotate(3deg) scale(0.98, 1.02); }
 }
 
-/* --- BRIGHT PATTERNS (Using white overlays) --- */
+/* --- TIER GLOWS --- */
+.dna-pet.tier-1 { filter: drop-shadow(0 0 2px rgba(255,255,255,0.3)); }
+.dna-pet.tier-2 { filter: drop-shadow(0 0 5px rgba(255,255,255,0.5)); }
+.dna-pet.tier-3 { filter: drop-shadow(0 0 10px var(--pet-color)); }
+
+/* --- PATTERNS --- */
 .pet-visual.pat-stripes { background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.2) 5px, rgba(255,255,255,0.2) 10px); }
 .pet-visual.pat-dots { background-image: radial-gradient(rgba(255,255,255,0.3) 20%, transparent 20%); background-size: 6px 6px; }
 .pet-visual.pat-circuit { background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 8px 8px; }
@@ -112,6 +116,8 @@
 .mut-demon-wings { top: -5px; left: -20px; width: 64px; height: 24px; background: #800 !important; clip-path: polygon(0% 0%, 20% 40%, 0% 100%, 50% 70%, 100% 100%, 80% 40%, 100% 0%, 50% 30%); z-index: -2; animation: wings-flap 1s infinite ease-in-out; border: none; }
 .mut-hover-bots::before, .mut-hover-bots::after { content: '🤖'; position: absolute; font-size: 10px; z-index: 2000; animation: bot-hover 3s infinite alternate; }
 .mut-gem-core { top: 35%; left: 35%; width: 30%; height: 30%; background: #fff !important; border-radius: 50%; box-shadow: 0 0 15px #fff; z-index: 600; animation: core-pulse 1s infinite alternate; border: none; }
+.mut-beard { bottom: -8px; left: 10%; width: 80%; height: 10px; background: #444 !important; clip-path: polygon(0% 0%, 100% 0%, 90% 100%, 70% 80%, 50% 100%, 30% 80%, 10% 100%); z-index: 5; opacity: 0.9; border: none; }
+.mut-mustache { top: 55%; left: 20%; width: 60%; height: 4px; background: #222 !important; clip-path: polygon(0% 100%, 50% 0%, 100% 100%, 50% 80%); z-index: 110; border: none; }
 
 /* --- ACCESSORIES (VERY HIGH Z-INDEX) --- */
 .pet-accessory { position: absolute; z-index: 1500; filter: brightness(1.1); }
@@ -121,6 +127,7 @@
 .acc-crown { top: -12px; left: 0; width: 100%; height: 12px; background: #f1c40f !important; clip-path: polygon(0% 100%, 0% 0%, 25% 50%, 50% 0%, 75% 50%, 100% 0%, 100% 100%); }
 .acc-wizard-hat { top: -18px; left: -10%; width: 120%; height: 20px; background: #4b0082 !important; clip-path: polygon(50% 0%, 20% 80%, 0% 100%, 100% 100%, 80% 80%); }
 .acc-cyber-mask { top: 15%; left: -5%; width: 110%; height: 70%; background: rgba(0,255,204,0.3) !important; border: 2px solid #00ffcc; z-index: 2500; backdrop-filter: blur(1px); border-radius: 4px; }
+.acc-cape { top: 20%; left: -10%; width: 120%; height: 100%; background: #c0392b !important; clip-path: polygon(10% 0%, 90% 0%, 100% 100%, 50% 80%, 0% 100%); z-index: -5; opacity: 0.9; }
 
 /* --- MOODS --- */
 .dna-pet.mood-scared .pet-visual { animation: pet-shiver 0.15s infinite; filter: saturate(0.4) brightness(0.8); }
@@ -131,6 +138,7 @@
 .pet-visual.aura-fire { box-shadow: 0 0 20px #ff4400, inset 0 0 10px #ffaa00; border: 2px solid #ffcc00 !important; }
 .pet-visual.aura-plasma { box-shadow: 0 0 25px #9b59b6, inset 0 0 15px #fff; animation: plasma 2s infinite alternate; }
 .pet-visual.aura-void { background: #000 !important; box-shadow: 0 0 30px #000; border: 1px solid #444 !important; }
+.pet-visual.aura-nebula { background: linear-gradient(45deg, #ff00ff, #00ffff) !important; animation: nebula-spin 10s infinite linear; box-shadow: 0 0 15px rgba(255,0,255,0.5); }
 
 /* Tooltip & Speech */
 .dna-pet-tooltip { visibility: hidden; width: 140px; background-color: #0d1117; color: #c9d1d9; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 100000000; bottom: 160%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 11px; border: 1px solid #30363d; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
