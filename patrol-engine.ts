@@ -49,25 +49,33 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
-        // 1. DYNAMIC GLOW: Extract color from square
+        // 1. COLOR MIMICRY: Extract exactly what the other extension loaded
         const style = window.getComputedStyle(targetDay);
-        const squareColor = style.fill !== 'none' && style.fill !== 'rgba(0, 0, 0, 0)' ? style.fill : style.backgroundColor;
+        // Prioritize fill (often used by extensions for SVG) then background
+        const squareColor = (style.fill && style.fill !== 'none' && !style.fill.includes('rgba(0, 0, 0, 0)')) 
+            ? style.fill 
+            : style.backgroundColor;
 
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
-            // Apply glow with !important via setProperty
-            visual.style.setProperty('box-shadow', `0 0 20px 5px ${squareColor}`, 'important');
+            // Update pet's core color to the square's color
+            petElement.style.setProperty('--pet-color', squareColor);
             
-            // Pulse effect
+            // Apply "Eating" glow effect
+            visual.style.setProperty('box-shadow', `0 0 25px 8px ${squareColor}`, 'important');
+            
+            // Pulse animation trigger
+            petElement.classList.remove('is-eating');
+            void petElement.offsetWidth; // Trigger reflow
             petElement.classList.add('is-eating');
-            setTimeout(() => petElement.classList.remove('is-eating'), 800);
+            setTimeout(() => petElement.classList.remove('is-eating'), 1000);
         }
 
-        // 2. WINKING LOGIC
+        // 2. WINKING
         const eyes = petElement.querySelector('.pet-eyes') as HTMLElement;
-        if (eyes && Math.random() > 0.7) {
+        if (eyes && Math.random() > 0.8) {
             eyes.classList.add('is-winking');
-            setTimeout(() => eyes.classList.remove('is-winking'), 500);
+            setTimeout(() => eyes.classList.remove('is-winking'), 600);
         }
 
         const count = getCommitCount(targetDay);
@@ -98,7 +106,7 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
                 if (phrases) {
                     speech.textContent = phrases[Math.floor(Math.random() * phrases.length)];
                     speech.style.display = 'block';
-                    setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2000);
+                    setTimeout(() => { if (speech) speech.style.display = 'none'; }, 2500);
                 }
             }
         }
