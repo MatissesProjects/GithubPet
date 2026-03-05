@@ -136,7 +136,7 @@
 .pet-mutation { position: absolute; background-color: var(--pet-color); z-index: 1000; filter: brightness(1.1); border: 1px solid rgba(255,255,255,0.3); }
 .mut-horns { top: -10px; left: 0; width: 100%; height: 12px; clip-path: polygon(15% 100%, 25% 0%, 35% 100%, 65% 100%, 75% 0%, 85% 100%); z-index: -1; }
 .mut-halo { top: -14px; left: 5%; width: 90%; height: 5px; border-radius: 50%; background: #ffff00 !important; box-shadow: 0 0 15px #ffff00; border: none; }
-.mut-bat-wings { top: 5%; left: -15px; width: 54px; height: 18px; background: #221100 !important; clip-path: polygon(0% 0%, 25% 50%, 0% 100%, 50% 70%, 100% 100%, 75% 50%, 100% 0%, 50% 30%); z-index: -2; border: none; }
+.mut-bat-wings { top: 5%; left: -15px; width: 54px; height: 18px; background: #221100 !important; clip-path: polygon(0% 0%, 25% 50%, 0% 100%, 50% 70%, 100% 100%, 75% 50%, 100% 0%, 50% 30%); z-index: -2; border: none; filter: none !important; }
 .mut-spikes { width: 140%; height: 140%; top: -20%; left: -20%; clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); background: rgba(255,255,255,0.4) !important; z-index: -1; border: none; }
 .mut-tail { bottom: -6px; right: -6px; width: 12px; height: 12px; clip-path: polygon(0% 100%, 100% 0%, 100% 100%); z-index: -3; }
 .mut-fins { left: -6px; width: 36px; height: 12px; background: inherit; clip-path: polygon(0% 50%, 20% 0%, 80% 0%, 100% 50%, 80% 100%, 20% 100%); z-index: -2; }
