@@ -80,20 +80,23 @@ const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
     let dna = hexString;
-    while (dna.length < 4) dna += "0"; 
+    // Pad DNA if too short
+    while (dna.length < 8) dna += "F"; 
 
-    const baseSeed = parseInt(dna.slice(0, 4), 16);
-    const saltHash = salt ? hashString(salt) : 0;
-    const finalSeed = baseSeed ^ saltHash;
+    // Better seed combination: Hash the signature + salt string entirely
+    const seedInput = dna + salt;
+    const finalSeed = hashString(seedInput);
     const rng = seededRandom(finalSeed); 
 
     const evolutionChain = dna.slice(4);
     let totalCommits = 0;
-    for (const char of evolutionChain) totalCommits += parseInt(char, 16);
+    for (const char of evolutionChain) {
+        const val = parseInt(char, 16);
+        if (!isNaN(val)) totalCommits += val;
+    }
     
     const complexity = Math.min(5, Math.floor(totalCommits / 15));
 
-    // Generate Title
     const title = `${pickRandom(TITLES.prefixes, rng)} ${pickRandom(TITLES.suffixes, rng)}`;
     const personality = pickRandom(PERSONALITIES, rng);
 
@@ -109,9 +112,11 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         title
     };
 
+    // Evolution
     for (let i = 0; i < evolutionChain.length; i++) {
         const commitLevel = parseInt(evolutionChain[i], 16); 
-        
+        if (isNaN(commitLevel)) continue;
+
         if (commitLevel >= 12) {
             const mRng = seededRandom(finalSeed + i + commitLevel);
             const newMutation = pickRandom(PET_PARTS.mutations, mRng);
