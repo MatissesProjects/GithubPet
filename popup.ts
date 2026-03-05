@@ -1,4 +1,4 @@
-import { CollectionPet } from './engine';
+import { CollectionPet } from './engine.js';
 
 async function getCurrentUser(): Promise<string | null> {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });

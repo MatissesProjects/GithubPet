@@ -1,9 +1,9 @@
-import { PetState } from './engine';
+import { PetState } from './engine.js';
 
 export function createPetElement(petState: PetState, petId: string): HTMLElement {
     const container = document.createElement('div');
     container.id = `pet-${petId}`;
-    container.className = `dna-pet`;
+    container.className = `dna-pet tier-${petState.evolutionTier}`;
     container.style.setProperty('--pet-color', petState.color);
 
     const shadow = document.createElement('div');

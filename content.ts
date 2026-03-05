@@ -57,6 +57,14 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
+    // Repair collection
+    for (const id in petCollection) {
+        if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
+            delete petCollection[id];
+            collectionChanged = true;
+        }
+    }
+
     const monthlySigs: Record<string, { sig: string, year: string }> = {};
     const offset = yearDays.length - cleanSigs.length;
     
@@ -83,8 +91,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         const monthName = key.split('-')[0];
         const monthIndex = monthNames.indexOf(monthName);
         
-        // LIMIT: Only past/current months for CURRENT year. 
-        // All months for PREVIOUS years.
         if (year === currentYearStr && monthIndex > currentMonthIndex) continue;
 
         if (sig.length < 2) continue; 
@@ -137,7 +143,6 @@ async function trySpawnCollection() {
             const monthName = parts[2];
             const monthIndex = monthNames.indexOf(monthName);
 
-            // AGGRESSIVE REPAIR: Purge undefined, malformed, or FUTURE months
             const isMalformed = id.includes('undefined') || id.includes('Unknown') || parts.length < 3 || monthIndex === -1;
             const isFuture = (year === currentYearStr && monthIndex > currentMonthIndex);
 

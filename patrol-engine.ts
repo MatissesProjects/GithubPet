@@ -2,6 +2,35 @@ import { PetState } from './engine';
 import { PERSONALITY_PHRASES, PATROL_CONFIG, monthNames } from './config';
 import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils';
 
+export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, targetYear: string): HTMLElement[] {
+    const now = new Date();
+    const futureLimit = new Date();
+    futureLimit.setDate(now.getDate() + PATROL_CONFIG.futureLimitDays);
+
+    const targetMonthIndex = monthNames.indexOf(targetMonthName);
+    const yearNum = parseInt(targetYear, 10);
+    
+    const monthStart = new Date(yearNum, targetMonthIndex, 1);
+    const monthEnd = new Date(yearNum, targetMonthIndex + 1, 0);
+
+    const bufferStart = new Date(monthStart);
+    bufferStart.setDate(bufferStart.getDate() - 4);
+    
+    const bufferEnd = new Date(monthEnd);
+    bufferEnd.setDate(bufferEnd.getDate() + 4);
+
+    return allDays.filter(day => {
+        const dateStr = day.getAttribute('data-date');
+        if (!dateStr) return false;
+        
+        const date = new Date(dateStr);
+        const withinBuffer = date >= bufferStart && date <= bufferEnd;
+        const notTooFarFuture = date <= futureLimit;
+
+        return withinBuffer && notTooFarFuture;
+    });
+}
+
 export function startPatrol(petElement: HTMLElement, petState: PetState): void {
     const idParts = petElement.id.replace('pet-', '').split('-');
     const targetMonthName = idParts[2];
@@ -13,38 +42,7 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
         if (allDays.length === 0) return;
 
-        const now = new Date();
-        const futureLimit = new Date();
-        futureLimit.setDate(now.getDate() + PATROL_CONFIG.futureLimitDays);
-
-        // Find the boundary dates for the target month
-        const targetMonthIndex = monthNames.indexOf(targetMonthName);
-        const yearNum = parseInt(targetYear, 10);
-        
-        const monthStart = new Date(yearNum, targetMonthIndex, 1);
-        const monthEnd = new Date(yearNum, targetMonthIndex + 1, 0);
-
-        // Buffer limits
-        const bufferStart = new Date(monthStart);
-        bufferStart.setDate(bufferStart.getDate() - 4);
-        
-        const bufferEnd = new Date(monthEnd);
-        bufferEnd.setDate(bufferEnd.getDate() + 4);
-
-        let patrolPool = allDays.filter(day => {
-            const dateStr = day.getAttribute('data-date');
-            if (!dateStr) return false;
-            
-            const date = new Date(dateStr);
-            
-            // 1. Must be within Month +/- 4 days
-            const withinBuffer = date >= bufferStart && date <= bufferEnd;
-            
-            // 2. Must not be beyond the global future limit (4 days from today)
-            const notTooFarFuture = date <= futureLimit;
-
-            return withinBuffer && notTooFarFuture;
-        });
+        let patrolPool = getPatrolPool(allDays, targetMonthName, targetYear);
 
         if (patrolPool.length === 0) patrolPool = allDays;
 

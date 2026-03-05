@@ -1,11 +1,17 @@
-import { TITLES, PERSONALITY_PHRASES } from './config';
+import { TITLES, PERSONALITY_PHRASES } from './config.js';
 
 // --- 1. TYPES ---
-export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider' | 'orb' | 'crystal' | 'pyramid' | 'cloud';
-export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' | 'stars' | 'rain' | 'plasma' | 'leaves';
-export type PetMutation = 'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna' | 'shield' | 'sword' | 'magic-wand';
-export type PetAccessory = 'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape' | 'crown' | 'monocle' | 'headphones' | 'backpack';
-export type PetPattern = 'solid' | 'stripes' | 'dots' | 'gradient-shift' | 'circuit' | 'honeycomb' | 'star-field' | 'waves';
+export type PetBody = 'slime' | 'cube' | 'wisp' | 'mecha-spider' | 'orb' | 'crystal' | 'pyramid' | 'cloud' | 'ghost' | 'dragon-egg';
+export type PetAura = 'none' | 'fire' | 'digital-glitch' | 'shadow' | 'rainbow' | 'stars' | 'rain' | 'plasma' | 'leaves' | 'void' | 'nebula';
+export type PetMutation = 
+    'horns' | 'halo' | 'bat-wings' | 'spikes' | 'tail' | 'fins' | 'antenna' | 
+    'shield' | 'sword' | 'magic-wand' | 'wiggle' | 'angel-wings' | 'demon-wings' | 
+    'third-eye' | 'hover-bots' | 'leafy-tail' | 'gem-core';
+export type PetAccessory = 
+    'none' | 'hat' | 'scarf' | 'glasses' | 'tie' | 'cape' | 'crown' | 
+    'monocle' | 'headphones' | 'backpack' | 'wizard-hat' | 'viking-helmet' | 
+    'detective-pipe' | 'flower' | 'cyber-mask';
+export type PetPattern = 'solid' | 'stripes' | 'dots' | 'gradient-shift' | 'circuit' | 'honeycomb' | 'star-field' | 'waves' | 'lava' | 'glitch-static';
 export type PetPersonality = keyof typeof PERSONALITY_PHRASES;
 
 export interface PetState {
@@ -18,6 +24,7 @@ export interface PetState {
     complexity: number;
     personality: PetPersonality;
     title: string;
+    evolutionTier: number;
 }
 
 export interface CollectionPet {
@@ -63,25 +70,24 @@ function hashString(str: string): number {
 
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
-    bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud'],
+    bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud', 'ghost', 'dragon-egg'],
     colors: [
         '#FF0055', '#00FFCC', '#FFDD00', '#B000FF', 
         '#FF5500', '#55FF00', '#00AAFF', '#FF00FF',
         '#FFFFFF', '#444444', '#FF9900', '#00FF00',
-        '#E74C3C', '#3498DB', '#F1C40F', '#9B59B6'
+        '#E74C3C', '#3498DB', '#F1C40F', '#9B59B6',
+        '#1ABC9C', '#2ECC71', '#34495E', '#7F8C8D'
     ],
-    auras: ['none', 'fire', 'digital-glitch', 'shadow', 'rainbow', 'stars', 'rain', 'plasma', 'leaves'],
-    mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna', 'shield', 'sword', 'magic-wand'],
-    accessories: ['none', 'hat', 'scarf', 'glasses', 'tie', 'cape', 'crown', 'monocle', 'headphones', 'backpack'],
-    patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit', 'honeycomb', 'star-field', 'waves']
+    auras: ['none', 'fire', 'digital-glitch', 'shadow', 'rainbow', 'stars', 'rain', 'plasma', 'leaves', 'void', 'nebula'],
+    mutations: ['horns', 'halo', 'bat-wings', 'spikes', 'tail', 'fins', 'antenna', 'shield', 'sword', 'magic-wand', 'wiggle', 'angel-wings', 'demon-wings', 'third-eye', 'hover-bots', 'leafy-tail', 'gem-core'],
+    accessories: ['none', 'hat', 'scarf', 'glasses', 'tie', 'cape', 'crown', 'monocle', 'headphones', 'backpack', 'wizard-hat', 'viking-helmet', 'detective-pipe', 'flower', 'cyber-mask'],
+    patterns: ['solid', 'stripes', 'dots', 'gradient-shift', 'circuit', 'honeycomb', 'star-field', 'waves', 'lava', 'glitch-static']
 };
 
 const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
     const dna = hexString;
-    
-    // Final seed incorporates DNA + Salt for high uniqueness
     const finalSeed = hashString(dna + salt);
     const rng = seededRandom(finalSeed); 
 
@@ -91,8 +97,8 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         if (!isNaN(val)) totalCommits += val;
     }
     
-    // Complexity 0-5 based on actual activity
     const complexity = Math.min(5, Math.floor(totalCommits / 15));
+    const evolutionTier = Math.min(3, Math.floor(dna.length / 10));
 
     const title = `${pickRandom(TITLES.prefixes, rng)} ${pickRandom(TITLES.suffixes, rng)}`;
     const personality = pickRandom(PERSONALITIES, rng);
@@ -106,18 +112,25 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         pattern: pickRandom(PET_PARTS.patterns, rng),
         complexity,
         personality,
-        title
+        title,
+        evolutionTier
     };
 
-    // Evolution only based on ACTUAL available hex chars
+    // Evolution
     for (let i = 0; i < dna.length; i++) {
         const commitLevel = parseInt(dna[i], 16); 
         if (isNaN(commitLevel)) continue;
 
         // Higher commit days trigger modifications
-        if (commitLevel >= 13) {
+        if (commitLevel >= 12) {
             const mRng = seededRandom(finalSeed + i + 1);
-            const newMutation = pickRandom(PET_PARTS.mutations, mRng);
+            let mutationList = [...PET_PARTS.mutations];
+            
+            // Tiered mutations
+            if (commitLevel === 14) mutationList.push('demon-wings', 'angel-wings');
+            if (complexity === 5) mutationList.push('hover-bots');
+
+            const newMutation = pickRandom(mutationList, mRng);
             if (!petVisuals.mutations.includes(newMutation)) {
                 petVisuals.mutations.push(newMutation);
             }
@@ -134,7 +147,6 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         }
     }
 
-    // High complexity grants a guaranteed aura if missing
     if (complexity >= 4 && petVisuals.aura === 'none') {
         petVisuals.aura = pickRandom(PET_PARTS.auras.filter(a => a !== 'none'), rng);
     }

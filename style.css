@@ -48,6 +48,16 @@
     animation: pet-hop 0.5s infinite ease-in-out;
 }
 
+/* Wiggle Mutation */
+.dna-pet.mut-wiggle .pet-visual {
+    animation: pet-wiggle 0.3s infinite ease-in-out;
+}
+
+@keyframes pet-wiggle {
+    0%, 100% { transform: rotate(-3deg) scale(1.02, 0.98); }
+    50% { transform: rotate(3deg) scale(0.98, 1.02); }
+}
+
 /* --- PATTERNS --- */
 .pet-visual.pat-stripes { background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.1) 5px, rgba(255,255,255,0.1) 10px); }
 .pet-visual.pat-dots { background-image: radial-gradient(rgba(255,255,255,0.2) 20%, transparent 20%); background-size: 6px 6px; }
@@ -56,8 +66,10 @@
 .pet-visual.pat-honeycomb { background-image: radial-gradient(circle, transparent 20%, var(--pet-color) 20%, var(--pet-color) 80%, transparent 80%), radial-gradient(circle, transparent 20%, var(--pet-color) 20%, var(--pet-color) 80%, transparent 80%); background-size: 10px 10px; background-position: 0 0, 5px 5px; filter: contrast(1.2); }
 .pet-visual.pat-star-field { background-image: radial-gradient(white 1px, transparent 1px), radial-gradient(white 1px, transparent 1px); background-size: 10px 10px; background-position: 2px 3px, 6px 8px; }
 .pet-visual.pat-waves { background-image: radial-gradient(circle at 100% 50%, transparent 20%, rgba(255,255,255,0.1) 21%, rgba(255,255,255,0.1) 34%, transparent 35%, transparent), radial-gradient(circle at 0% 50%, transparent 20%, rgba(255,255,255,0.1) 21%, rgba(255,255,255,0.1) 34%, transparent 35%, transparent); background-size: 10px 10px; }
-
-@keyframes grad-shift { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(45deg); } }
+.pet-visual.pat-lava { background-image: radial-gradient(circle, #ff4400 10%, transparent 80%); background-size: 8px 8px; animation: lava-flow 4s infinite linear; }
+@keyframes lava-flow { 0% { background-position: 0 0; } 100% { background-position: 16px 16px; } }
+.pet-visual.pat-glitch-static { background-image: repeating-conic-gradient(from 0deg, #fff 0deg 90deg, #000 90deg 180deg); background-size: 2px 2px; opacity: 0.8; animation: glitch-static 0.1s infinite; }
+@keyframes glitch-static { 0% { transform: scale(1); } 50% { transform: scale(1.05) translate(1px, -1px); } }
 
 /* Face */
 .pet-face { position: absolute; top: 30%; left: 15%; width: 70%; height: 40%; z-index: 100; pointer-events: none; }
@@ -74,6 +86,8 @@
 .pet-visual.body-crystal { clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%); }
 .pet-visual.body-pyramid { clip-path: polygon(50% 0%, 100% 100%, 0% 100%); }
 .pet-visual.body-cloud { border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; filter: contrast(0.8) brightness(1.2); }
+.pet-visual.body-ghost { border-radius: 50% 50% 0 0; clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 80% 85%, 60% 100%, 40% 85%, 20% 100%, 0% 85%); opacity: 0.7; }
+.pet-visual.body-dragon-egg { border-radius: 50% 50% 50% 50% / 70% 70% 30% 30%; background-image: repeating-conic-gradient(from 0deg, transparent 0deg 30deg, rgba(0,0,0,0.2) 30deg 60deg); }
 
 /* Mecha-Spider */
 .pet-visual.body-mecha-spider { clip-path: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%); }
@@ -100,10 +114,18 @@
 .mut-sword { right: -8px; top: 20%; width: 4px; height: 16px; background: #ecf0f1 !important; clip-path: polygon(50% 0%, 100% 80%, 50% 100%, 0% 80%); border: 1px solid #bdc3c7; }
 .mut-magic-wand { right: -8px; top: 10%; width: 2px; height: 14px; background: #8e44ad !important; transform: rotate(20deg); }
 .mut-magic-wand::after { content: '⭐'; position: absolute; top: -6px; left: -4px; font-size: 8px; }
+.mut-angel-wings { top: 0; left: -15px; width: 54px; height: 20px; background: #fff !important; clip-path: polygon(0% 50%, 20% 0%, 50% 20%, 80% 0%, 100% 50%, 80% 100%, 50% 80%, 20% 100%); opacity: 0.8; z-index: -2; animation: wings-flap 2s infinite ease-in-out; }
+.mut-demon-wings { top: 0; left: -15px; width: 54px; height: 20px; background: #600 !important; clip-path: polygon(0% 0%, 20% 40%, 0% 100%, 50% 70%, 100% 100%, 80% 40%, 100% 0%, 50% 30%); z-index: -2; animation: wings-flap 1s infinite ease-in-out; }
+@keyframes wings-flap { 0%, 100% { transform: scaleX(1); } 50% { transform: scaleX(0.8); } }
+.mut-hover-bots::before, .mut-hover-bots::after { content: '🤖'; position: absolute; font-size: 8px; animation: bot-hover 3s infinite alternate; }
+.mut-hover-bots::before { left: -12px; top: -5px; } .mut-hover-bots::after { right: -12px; top: 10px; animation-delay: 1.5s; }
+@keyframes bot-hover { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+.mut-gem-core { top: 40%; left: 40%; width: 20%; height: 20%; background: #fff !important; border-radius: 50%; box-shadow: 0 0 10px #fff; z-index: 11; animation: core-pulse 1s infinite alternate; }
+@keyframes core-pulse { from { opacity: 0.5; } to { opacity: 1; transform: scale(1.2); } }
 
 /* --- ACCESSORIES --- */
 .pet-accessory { position: absolute; z-index: 150; }
-.acc-hat { top: -6px; left: 10%; width: 80%; height: 10px; background: #e74c3c !important; border-radius: 10px 10px 2px 2px; box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+.acc-hat { top: -6px; left: 10%; width: 80%; height: 8px; background: #e74c3c !important; border-radius: 10px 10px 2px 2px; box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
 .acc-scarf { bottom: 0; left: 0; width: 100%; height: 6px; background: #3498db !important; border-radius: 0 0 4px 4px; }
 .acc-glasses { top: 25%; left: 5%; width: 90%; height: 10px; border-top: 2px solid #111; border-bottom: 2px solid #111; background: rgba(255,255,255,0.1) !important; z-index: 200; }
 .acc-tie { bottom: -8px; left: 50%; width: 6px; height: 10px; transform: translateX(-50%); background: #2ecc71 !important; clip-path: polygon(0% 0%, 100% 0%, 50% 100%); }
@@ -112,10 +134,30 @@
 .acc-monocle { top: 25%; left: 10%; width: 8px; height: 8px; border: 2px solid gold; border-radius: 50%; background: rgba(255,255,255,0.2) !important; }
 .acc-headphones { top: 20%; left: -4px; width: 32px; height: 12px; border-top: 3px solid #333; border-radius: 50% 50% 0 0; background: none !important; }
 .acc-backpack { bottom: 10%; left: 10%; width: 80%; height: 60%; background: #8e44ad !important; border-radius: 4px; z-index: -4; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+.acc-wizard-hat { top: -15px; left: 0; width: 100%; height: 15px; background: #4b0082 !important; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); z-index: 155; }
+.acc-wizard-hat::after { content: '⭐'; position: absolute; bottom: 2px; left: 50%; transform: translateX(-50%); font-size: 6px; color: gold; }
+.acc-viking-helmet { top: -8px; left: 0; width: 100%; height: 8px; background: #7f8c8d !important; border-radius: 50% 50% 0 0; }
+.acc-viking-helmet::before, .acc-viking-helmet::after { content: ''; position: absolute; top: -5px; width: 6px; height: 10px; background: #eee; }
+.acc-viking-helmet::before { left: 0; clip-path: polygon(100% 100%, 0% 0%, 100% 50%); }
+.acc-viking-helmet::after { right: 0; clip-path: polygon(0% 100%, 100% 0%, 0% 50%); }
+.acc-flower { top: -10px; right: -2px; font-size: 12px; content: '🌸'; }
+.acc-cyber-mask { top: 20%; left: 0; width: 100%; height: 60%; background: rgba(0,255,204,0.2) !important; border: 1px solid #00ffcc; z-index: 205; backdrop-filter: blur(1px); }
 
 /* --- MOODS --- */
-.dna-pet.mood-scared .pet-visual { animation: pet-shiver 0.1s infinite; filter: saturate(0.3); }
-@keyframes pet-shiver { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(1px, 1px); } }
+.dna-pet.mood-scared .pet-visual { 
+    animation: pet-shiver 0.15s infinite; 
+    filter: saturate(0.2) brightness(0.6) contrast(0.8) blur(0.5px);
+}
+.dna-pet.mood-scared .pet-eyes::before, .dna-pet.mood-scared .pet-eyes::after { 
+    transform: scale(0.3); 
+    opacity: 0.5;
+}
+@keyframes pet-shiver { 
+    0%, 100% { transform: translate(0, 0); } 
+    25% { transform: translate(1px, 0.5px); }
+    50% { transform: translate(-1px, 0); }
+    75% { transform: translate(0.5px, -1px); }
+}
 .dna-pet.mood-ecstatic .pet-visual { animation: pet-idle 0.8s infinite ease-in-out; box-shadow: 0 0 0 2px white, 0 0 0 4px var(--pet-color); }
 
 /* --- AURAS --- */
@@ -123,13 +165,17 @@
 @keyframes aura-rainbow { 0% { filter: hue-rotate(0deg); box-shadow: 0 0 10px red; } 100% { filter: hue-rotate(360deg); box-shadow: 0 0 10px red; } }
 .pet-visual.aura-stars::after { content: '✨'; position: absolute; font-size: 8px; animation: aura-stars 2s infinite; }
 @keyframes aura-stars { 0% { transform: translate(-10px, -10px); opacity: 0; } 50% { opacity: 1; } 100% { transform: translate(10px, -20px); opacity: 0; } }
-.pet-visual.aura-fire { box-shadow: 0 0 15px #ff4400, inset 0 0 5px #ffcc00; border: 2px orange solid !important; }
-.pet-visual.aura-digital-glitch { animation: glitch 0.2s infinite; }
+.pet-visual.aura-fire { box-shadow: inset 0 0 15px #ff4400, 0 0 10px #ff4400; border: 2px orange solid !important; }
+.aura-digital-glitch { animation: glitch 0.2s infinite; }
 @keyframes glitch { 0% { transform: translate(0); } 50% { transform: translate(-2px, 2px); filter: hue-rotate(90deg); } }
 .pet-visual.aura-plasma { box-shadow: 0 0 20px #9b59b6, inset 0 0 10px #8e44ad; animation: plasma 2s infinite alternate; }
 @keyframes plasma { from { filter: brightness(1); } to { filter: brightness(1.5) contrast(1.2); } }
 .pet-visual.aura-leaves::after { content: '🍃'; position: absolute; font-size: 10px; animation: leaves 3s infinite linear; }
 @keyframes leaves { 0% { transform: rotate(0deg) translate(20px) rotate(0deg); opacity: 0; } 50% { opacity: 1; } 100% { transform: rotate(360deg) translate(20px) rotate(-360deg); opacity: 0; } }
+.pet-visual.aura-void { background: #000 !important; box-shadow: 0 0 20px #000, inset 0 0 10px #333; animation: void-pulse 4s infinite alternate; }
+@keyframes void-pulse { from { transform: scale(1); } to { transform: scale(1.1); filter: contrast(2); } }
+.pet-visual.aura-nebula { background: linear-gradient(45deg, #ff00ff, #00ffff) !important; animation: nebula-spin 10s infinite linear; box-shadow: 0 0 15px rgba(255,0,255,0.5); }
+@keyframes nebula-spin { from { filter: hue-rotate(0deg); } to { filter: hue-rotate(360deg); } }
 
 /* Tooltip & Speech */
 .dna-pet-tooltip { visibility: hidden; width: 140px; background-color: #0d1117; color: #c9d1d9; text-align: center; border-radius: 8px; padding: 10px; position: absolute; z-index: 100000000; bottom: 160%; left: 50%; transform: translateX(-50%); opacity: 0; transition: opacity 0.2s; font-size: 11px; border: 1px solid #30363d; }
