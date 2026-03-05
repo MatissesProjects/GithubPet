@@ -43,19 +43,24 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         if (allDays.length === 0) return;
 
         let patrolPool = getPatrolPool(allDays, targetMonthName, targetYear);
-
         if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
 
-        // React to square color: Extract fill or computed background
-        const squareColor = targetDay.getAttribute('fill') || window.getComputedStyle(targetDay).backgroundColor;
+        // 1. EXTRACTION: Get computed color reliably
+        const style = window.getComputedStyle(targetDay);
+        const squareColor = style.fill !== 'none' ? style.fill : style.backgroundColor;
+
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
-            // Apply glow based on square color
-            visual.style.boxShadow = `0 0 15px ${squareColor}`;
+            // 2. EATING EFFECT: Pulse and Glow
+            visual.style.boxShadow = `0 0 20px 5px ${squareColor}`;
+            
+            // Add a temporary "eat" class for animation
+            petElement.classList.add('is-eating');
+            setTimeout(() => petElement.classList.remove('is-eating'), 1000);
         }
 
         const count = getCommitCount(targetDay);
