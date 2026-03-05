@@ -1,6 +1,6 @@
-import { PetState } from './engine';
-import { PERSONALITY_PHRASES, PATROL_CONFIG, monthNames } from './config';
-import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils';
+import { PetState } from './engine.js';
+import { PERSONALITY_PHRASES, PATROL_CONFIG, monthNames } from './config.js';
+import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils.js';
 
 export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, targetYear: string): HTMLElement[] {
     const now = new Date();
@@ -49,6 +49,14 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
         const rect = targetDay.getBoundingClientRect();
         const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
+
+        // React to square color: Extract fill or computed background
+        const squareColor = targetDay.getAttribute('fill') || window.getComputedStyle(targetDay).backgroundColor;
+        const visual = petElement.querySelector('.pet-visual') as HTMLElement;
+        if (visual) {
+            // Apply glow based on square color
+            visual.style.boxShadow = `0 0 15px ${squareColor}`;
+        }
 
         const count = getCommitCount(targetDay);
         const l2Threshold = getL2Threshold();

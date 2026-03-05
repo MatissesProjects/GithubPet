@@ -37,7 +37,7 @@
     width: 100%;
     height: 100%;
     animation: pet-idle 3s infinite ease-in-out;
-    transition: transform 0.3s, filter 0.3s, box-shadow 0.3s;
+    transition: transform 0.3s, filter 0.3s, box-shadow 0.5s ease-out;
     background-color: var(--pet-color, #ff3388);
     background-image: radial-gradient(circle at 30% 30%, rgba(255,255,255,0.4) 0%, transparent 60%);
     border: 1px solid rgba(255,255,255,0.4);
@@ -66,7 +66,7 @@
 /* --- PATTERNS --- */
 .pet-visual.pat-stripes { background-image: repeating-linear-gradient(45deg, transparent, transparent 5px, rgba(255,255,255,0.2) 5px, rgba(255,255,255,0.2) 10px); }
 .pet-visual.pat-dots { background-image: radial-gradient(rgba(255,255,255,0.3) 20%, transparent 20%); background-size: 6px 6px; }
-.pet-visual.pat-circuit { background-image: linear-gradient(90deg, rgba(255,255,255,0.2) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.2) 1px, transparent 1px); background-size: 8px 8px; }
+.pet-visual.pat-circuit { background-image: linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px); background-size: 8px 8px; }
 .pet-visual.pat-gradient-shift { background-image: linear-gradient(135deg, rgba(255,255,255,0.3), transparent); animation: grad-shift 5s infinite alternate; }
 .pet-visual.pat-honeycomb { background-image: radial-gradient(circle, rgba(255,255,255,0.1) 20%, transparent 80%); background-size: 10px 10px; background-position: 0 0, 5px 5px; }
 .pet-visual.pat-star-field { background-image: radial-gradient(white 1px, transparent 1.5px); background-size: 8px 8px; }
@@ -131,7 +131,7 @@
 
 /* --- MOODS --- */
 .dna-pet.mood-scared .pet-visual { animation: pet-shiver 0.15s infinite; filter: saturate(0.4) brightness(0.8); }
-.dna-pet.mood-ecstatic .pet-visual { animation: pet-idle 0.8s infinite ease-in-out; box-shadow: 0 0 0 2px #fff, 0 0 15px var(--pet-color); filter: brightness(1.2); }
+.dna-pet.mood-ecstatic .pet-visual { animation: pet-idle 0.8s infinite ease-in-out; filter: brightness(1.2) contrast(1.1); }
 
 /* --- AURAS --- */
 .pet-visual.aura-rainbow { animation: aura-rainbow 3s linear infinite; border: 2px solid #fff !important; }
