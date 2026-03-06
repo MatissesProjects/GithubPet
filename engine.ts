@@ -38,6 +38,8 @@ export interface CollectionPet {
     month: string;
     enabled: boolean;
     addedAt: number;
+    totalCommits?: number;
+    dnaLength?: number;
 }
 
 export interface PetParts {
@@ -75,7 +77,7 @@ function hashString(str: string): number {
 
 // --- 3. PROCEDURAL ENGINE ---
 export const PET_PARTS: PetParts = {
-    bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud', 'ghost', 'dragon-egg'],
+    bodies: ['slime', 'cube', 'wisp', 'mecha-spider', 'orb', 'crystal', 'pyramid', 'cloud', 'ghost'],
     colors: [
         '#FF3388', '#33FFCC', '#FFDD00', '#CC66FF', 
         '#FF8833', '#88FF33', '#33CCFF', '#FF33FF'
@@ -93,7 +95,7 @@ export const PET_PARTS: PetParts = {
 
 const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
-export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
+export function generateProceduralPet(hexString: string, salt: string = "", totalCommitsOverride?: number, dnaLengthOverride?: number): PetState {
     const dna = hexString;
     // Identity should be stable for the month, using only salt
     const identitySeed = hashString(salt);
@@ -104,15 +106,19 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
     const evRng = seededRandom(evolutionSeed);
 
     let totalCommits = 0;
-    for (const char of dna) {
-        const val = parseInt(char, 16);
-        if (!isNaN(val)) totalCommits += val;
+    if (totalCommitsOverride !== undefined) {
+        totalCommits = totalCommitsOverride;
+    } else {
+        for (const char of dna) {
+            const val = parseInt(char, 16);
+            if (!isNaN(val)) totalCommits += val;
+        }
     }
     
     const complexity = Math.min(5, Math.floor(totalCommits / 15));
 
     // New Evolution Logic: Grow from Hatchling to Legendary within the month
-    const consistency = dna.length;
+    const consistency = dnaLengthOverride !== undefined ? dnaLengthOverride : dna.length;
     let evolutionTier = 0;
     let growthLabel = "Egg Hatchling";
 
@@ -128,7 +134,9 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
     }
 
     // Use idRng for stable traits
-    const baseBody = pickRandom(PET_PARTS.bodies, idRng);
+    const hatchedBody = pickRandom(PET_PARTS.bodies, idRng);
+    const body = evolutionTier === 0 ? 'dragon-egg' : hatchedBody;
+
     const title = `${pickRandom(TITLES.prefixes, idRng)} ${pickRandom(TITLES.suffixes, idRng)}`;
     const personality = pickRandom(PERSONALITIES, idRng);
 
@@ -143,7 +151,7 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
     const colorShift = (dna.length * 10) % 360;
 
     let petVisuals: PetState = {
-        body: baseBody,
+        body,
         color: baseColor,
         aura: 'none',
         mutations: [],
@@ -155,31 +163,33 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         evolutionTier,
         growthLabel,
         colorShift,
-        dnaLength: dna.length,
+        dnaLength: consistency,
         totalCommits
     };
 
-    // Evolution chain additions (stable given same DNA)
-    const modRng = seededRandom(evolutionSeed + 123);
-    if (evolutionTier >= 1) petVisuals.mutations.push(pickRandom(PET_PARTS.mutations, modRng));
-    if (evolutionTier >= 2) petVisuals.accessory = pickRandom(PET_PARTS.accessories, modRng);
-    if (evolutionTier >= 3) petVisuals.aura = pickRandom(PET_PARTS.auras, modRng);
+    // Evolution chain additions (only if hatched)
+    if (evolutionTier > 0) {
+        const modRng = seededRandom(evolutionSeed + 123);
+        if (evolutionTier >= 1) petVisuals.mutations.push(pickRandom(PET_PARTS.mutations, modRng));
+        if (evolutionTier >= 2) petVisuals.accessory = pickRandom(PET_PARTS.accessories, modRng);
+        if (evolutionTier >= 3) petVisuals.aura = pickRandom(PET_PARTS.auras, modRng);
 
-    for (let i = 0; i < dna.length; i++) {
-        const commitLevel = parseInt(dna[i], 16); 
-        if (isNaN(commitLevel)) continue;
+        for (let i = 0; i < dna.length; i++) {
+            const commitLevel = parseInt(dna[i], 16); 
+            if (isNaN(commitLevel)) continue;
 
-        if (commitLevel >= 12) {
-            const mRng = seededRandom(evolutionSeed + i + 1);
-            const newMutation = pickRandom(PET_PARTS.mutations, mRng);
-            if (!petVisuals.mutations.includes(newMutation)) {
-                petVisuals.mutations.push(newMutation);
+            if (commitLevel >= 12) {
+                const mRng = seededRandom(evolutionSeed + i + 1);
+                const newMutation = pickRandom(PET_PARTS.mutations, mRng);
+                if (!petVisuals.mutations.includes(newMutation)) {
+                    petVisuals.mutations.push(newMutation);
+                }
             }
-        }
 
-        if (commitLevel === 11 && petVisuals.accessory === 'none') {
-            const aRng = seededRandom(evolutionSeed + i + 2);
-            petVisuals.accessory = pickRandom(PET_PARTS.accessories, aRng);
+            if (commitLevel === 11 && petVisuals.accessory === 'none') {
+                const aRng = seededRandom(evolutionSeed + i + 2);
+                petVisuals.accessory = pickRandom(PET_PARTS.accessories, aRng);
+            }
         }
     }
 

@@ -37,13 +37,35 @@ export function parseDateParts(dateStr: string) {
 }
 
 export function getCommitCount(day: HTMLElement): number {
+    const dataCount = day.getAttribute('data-count');
+    if (dataCount) return parseInt(dataCount, 10);
+
     const label = day.getAttribute('aria-label');
     if (label) {
-        const match = label.match(/^(\d+)/);
+        // Look for the number immediately followed by "contribution" or similar
+        // This handles "5 contributions", "1 contribution", and localized versions if they follow the pattern
+        const match = label.match(/(\d+)\s+contribut/i);
         if (match) return parseInt(match[1], 10);
+        
+        // Handle "No contributions"
         if (label.toLowerCase().includes('no contribution')) return 0;
+
+        // Fallback: If the label is just "5 on March 6" or similar
+        // We look for a number that isn't the year (4 digits) or a small day number at the end
+        // But actually, GitHub labels are usually consistent. 
+        // Let's try to find the first number that isn't a year.
+        const numbers = label.match(/\d+/g);
+        if (numbers) {
+            for (const n of numbers) {
+                if (n.length < 4) return parseInt(n, 10);
+            }
+        }
     }
-    return parseInt(day.getAttribute('data-level') || '0', 10);
+    
+    // Last fallback: use data-level as an estimate (L1=1-2, L2=3-5, L3=6-10, L4=11+)
+    const level = parseInt(day.getAttribute('data-level') || '0', 10);
+    const estimates = [0, 1, 4, 8, 15]; // Slightly higher estimates to favor growth
+    return estimates[level] || 0;
 }
 
 export function getL2Threshold(): number {

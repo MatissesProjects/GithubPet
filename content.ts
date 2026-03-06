@@ -5,7 +5,8 @@ import {
     forceOverflowVisible, 
     getActiveUsername, 
     getCurrentViewedYear, 
-    parseDateParts 
+    parseDateParts,
+    getCommitCount
 } from './dom-utils';
 import { createPetElement } from './pet-renderer';
 import { startPatrol } from './patrol-engine';
@@ -40,70 +41,86 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     }
     const cleanSigs = sigChars.slice(hexStart);
 
+    // Get ALL days in the graph for full month analysis
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
-    if (allDays.length === 0 || cleanSigs.length === 0) return;
+    if (allDays.length === 0) return;
 
-    const now = new Date();
+    // 1. Calculate REAL monthly stats from the entire calendar graph
+    const monthlyStats: Record<string, { totalCommits: number, dayCount: number, year: string, month: string }> = {};
+    for (const dayEl of allDays) {
+        const dateStr = dayEl.getAttribute('data-date');
+        if (!dateStr) continue;
+
+        const { month, year } = parseDateParts(dateStr);
+        const monthName = monthNames[month];
+        const yearStr = year.toString();
+        const key = `${monthName}-${yearStr}`;
+
+        if (!monthlyStats[key]) monthlyStats[key] = { totalCommits: 0, dayCount: 0, year: yearStr, month: monthName };
+        
+        const commits = getCommitCount(dayEl);
+        monthlyStats[key].totalCommits += commits;
+        if (commits > 0) monthlyStats[key].dayCount += 1;
+    }
+
+    // 2. Identify the pulse signature parts (if available)
+    const daySigs = cleanSigs.length >= 4 ? cleanSigs.slice(0, -4) : [];
+    const genesisBlock = cleanSigs.length >= 4 ? cleanSigs.slice(-4) : ['0', '0', '0', '0'];
+
     const viewedYear = getCurrentViewedYear();
-    const currentMonthIndex = now.getMonth();
-    const currentYearStr = now.getFullYear().toString();
+    const yearDays = allDays.filter(day => day.getAttribute('data-date')?.startsWith(viewedYear));
     
-    const yearDays = allDays.filter(day => {
-        const dateStr = day.getAttribute('data-date');
-        if (!dateStr) return false;
-        return dateStr.startsWith(viewedYear);
-    });
+    // Map signature characters to months based on newest-to-oldest sequence
+    const sigByMonth: Record<string, string> = {};
+    if (daySigs.length > 0) {
+        for (let i = 0; i < daySigs.length; i++) {
+            const dayIndex = yearDays.length - 1 - i;
+            if (dayIndex < 0) break;
 
+            const dateStr = yearDays[dayIndex].getAttribute('data-date');
+            if (dateStr) {
+                const { month, year } = parseDateParts(dateStr);
+                const key = `${monthNames[month]}-${year}`;
+                if (!sigByMonth[key]) sigByMonth[key] = "";
+                sigByMonth[key] += daySigs[i];
+            }
+        }
+    }
+
+    // 3. Update the pet collection for every month in the graph
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
-    // Repair collection
-    for (const id in petCollection) {
-        if (id.includes('undefined') || id.includes('Unknown') || id.split('-').length < 3) {
-            delete petCollection[id];
-            collectionChanged = true;
-        }
-    }
+    const now = new Date();
+    const currentMonthIndex = now.getMonth();
+    const currentYearStr = now.getFullYear().toString();
 
-    const monthlySigs: Record<string, { sig: string, year: string }> = {};
-    const offset = yearDays.length - cleanSigs.length;
-    
-    for (let i = 0; i < cleanSigs.length; i++) {
-        const dayIndex = i + offset;
-        if (dayIndex < 0 || dayIndex >= yearDays.length) continue;
+    for (const key in monthlyStats) {
+        const { totalCommits, dayCount, year, month } = monthlyStats[key];
+        const monthIndex = monthNames.indexOf(month);
 
-        const dateStr = yearDays[dayIndex].getAttribute('data-date');
-        if (dateStr) {
-            const { month, year } = parseDateParts(dateStr);
-            const monthName = monthNames[month];
-            if (!monthName) continue;
-
-            const yearStr = year.toString();
-            const key = `${monthName}-${yearStr}`;
-            
-            if (!monthlySigs[key]) monthlySigs[key] = { sig: "", year: yearStr };
-            monthlySigs[key].sig += cleanSigs[i];
-        }
-    }
-
-    for (const key in monthlySigs) {
-        const { sig, year } = monthlySigs[key];
-        const monthName = key.split('-')[0];
-        const monthIndex = monthNames.indexOf(monthName);
-        
+        // Don't create pets for future months in current year
         if (year === currentYearStr && monthIndex > currentMonthIndex) continue;
+        
+        // Use signature if we have it, otherwise fallback to zeros
+        // We always append the genesisBlock so the seed is consistent
+        const rawSig = sigByMonth[key] || "0".repeat(30);
+        const finalSig = rawSig + genesisBlock.join('');
+        const petId = `${username}-${year}-${month}`;
 
-        if (sig.length < 2) continue; 
+        const existing = petCollection[petId];
+        const needsUpdate = !existing || existing.signature !== finalSig || existing.totalCommits !== totalCommits || existing.dnaLength !== dayCount;
 
-        const petId = `${username}-${year}-${monthName}`;
-        if (!petCollection[petId] || petCollection[petId].signature !== sig) {
+        if (needsUpdate) {
             petCollection[petId] = {
-                signature: sig,
+                signature: finalSig,
                 username,
                 year,
-                month: monthName,
+                month,
                 enabled: true,
-                addedAt: Date.now()
+                addedAt: existing?.addedAt || Date.now(),
+                totalCommits,
+                dnaLength: dayCount
             };
             collectionChanged = true;
         }
@@ -166,7 +183,7 @@ async function trySpawnCollection() {
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
             if (petData.username === username && petData.enabled && petData.year === viewedYear) {
-                spawnPet(generateProceduralPet(petData.signature, petId), petId);
+                spawnPet(generateProceduralPet(petData.signature, petId, petData.totalCommits, petData.dnaLength), petId);
             }
         }
     } finally {

@@ -51,7 +51,7 @@ describe('DOM Utilities', () => {
                     return null;
                 }
             } as any;
-            expect(getCommitCount(mock)).toBe(3);
+            expect(getCommitCount(mock)).toBe(8);
         });
     });
 

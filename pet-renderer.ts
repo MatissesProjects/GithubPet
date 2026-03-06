@@ -67,7 +67,7 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
         const nextCommits = petState.evolutionTier === 0 ? 20 : (petState.evolutionTier === 1 ? 50 : 100);
         
         const tierHint = petState.evolutionTier < 3 
-            ? `Next Stage at ${nextConsistency} days OR ${nextCommits} commits`
+            ? `Next Stage at ${nextConsistency} days (Current: ${petState.dnaLength}) OR ${nextCommits} commits (Current: ${petState.totalCommits})`
             : "Maximum Growth Reached!";
 
         const nextComplexityCommits = (petState.complexity + 1) * 15;
