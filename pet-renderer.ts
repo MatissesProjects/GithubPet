@@ -53,6 +53,14 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     face.className = 'pet-face';
     const eyes = document.createElement('div');
     eyes.className = 'pet-eyes';
+    
+    const leftPupil = document.createElement('div');
+    leftPupil.className = 'pet-pupil pupil-left';
+    const rightPupil = document.createElement('div');
+    rightPupil.className = 'pet-pupil pupil-right';
+    
+    eyes.appendChild(leftPupil);
+    eyes.appendChild(rightPupil);
     face.appendChild(eyes);
     container.appendChild(face);
     

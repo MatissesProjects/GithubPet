@@ -107,8 +107,25 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         }
 
         petElement.classList.add('is-moving');
-        petElement.style.left = `${rect.left - containerRect.left + (rect.width / 2) - 12}px`;
-        petElement.style.top = `${rect.top - containerRect.top + (rect.height / 2) - 12}px`;
+        const targetX = rect.left - containerRect.left + (rect.width / 2) - 12;
+        const targetY = rect.top - containerRect.top + (rect.height / 2) - 12;
+        
+        // Calculate look direction
+        const currentX = parseFloat(petElement.style.left) || targetX;
+        const currentY = parseFloat(petElement.style.top) || targetY;
+        const dx = targetX - currentX;
+        const dy = targetY - currentY;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+        
+        if (dist > 5) {
+            const lookX = (dx / dist) * 2; // max 2px offset
+            const lookY = (dy / dist) * 2;
+            petElement.style.setProperty('--look-x', `${lookX}px`);
+            petElement.style.setProperty('--look-y', `${lookY}px`);
+        }
+
+        petElement.style.left = `${targetX}px`;
+        petElement.style.top = `${targetY}px`;
 
         if (Math.random() > PATROL_CONFIG.speechProbability) {
             const speech = petElement.querySelector('#pet-speech') as HTMLElement;

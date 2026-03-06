@@ -91,13 +91,27 @@
 /* Blinking & Winking */
 .pet-eyes::before, .pet-eyes::after { 
     content: ''; 
-    width: 6px; 
-    height: 6px; 
-    background: #000; 
+    width: 7px; 
+    height: 7px; 
+    background: #fff; 
     border-radius: 50%; 
     animation: pet-blink 4s infinite; 
-    border: 1px solid rgba(255,255,255,0.3);
+    border: 1px solid rgba(0,0,0,0.1);
     transition: transform 0.2s, opacity 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.pet-pupil {
+    position: absolute;
+    width: 3px;
+    height: 3px;
+    background: #000;
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(calc(-50% + var(--look-x, 0px)), calc(-50% + var(--look-y, 0px)));
+    transition: transform 0.3s ease-out;
 }
 
 @keyframes pet-blink {
