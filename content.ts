@@ -247,10 +247,22 @@ async function trySpawnCollection() {
 
 if (isContextValid()) {
     chrome.storage.onChanged.addListener((changes) => {
-        if (changes.petCollection) trySpawnCollection();
+        if (isContextValid() && changes.petCollection) trySpawnCollection();
     });
-    const observer = new MutationObserver(() => trySpawnCollection());
+    
+    const observer = new MutationObserver(() => {
+        if (isContextValid()) trySpawnCollection();
+    });
+    
     observer.observe(document.body, { childList: true, subtree: true, characterData: true });
-    setInterval(trySpawnCollection, 3000);
+    
+    const collectionInterval = setInterval(() => {
+        if (!isContextValid()) {
+            clearInterval(collectionInterval);
+            return;
+        }
+        trySpawnCollection();
+    }, 3000);
+    
     trySpawnCollection();
 }
