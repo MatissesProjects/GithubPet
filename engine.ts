@@ -170,9 +170,23 @@ export function generateProceduralPet(hexString: string, salt: string = "", tota
     // Evolution chain additions (only if hatched)
     if (evolutionTier > 0) {
         const modRng = seededRandom(evolutionSeed + 123);
+        
+        // Tier 1+: Guaranteed 1st mutation
         if (evolutionTier >= 1) petVisuals.mutations.push(pickRandom(PET_PARTS.mutations, modRng));
-        if (evolutionTier >= 2) petVisuals.accessory = pickRandom(PET_PARTS.accessories, modRng);
-        if (evolutionTier >= 3) petVisuals.aura = pickRandom(PET_PARTS.auras, modRng);
+        
+        // Tier 2+: Guaranteed accessory + 2nd mutation
+        if (evolutionTier >= 2) {
+            petVisuals.accessory = pickRandom(PET_PARTS.accessories, modRng);
+            const mut2 = pickRandom(PET_PARTS.mutations, seededRandom(evolutionSeed + 456));
+            if (!petVisuals.mutations.includes(mut2)) petVisuals.mutations.push(mut2);
+        }
+        
+        // Tier 3: Guaranteed aura + 3rd mutation
+        if (evolutionTier >= 3) {
+            petVisuals.aura = pickRandom(PET_PARTS.auras, modRng);
+            const mut3 = pickRandom(PET_PARTS.mutations, seededRandom(evolutionSeed + 789));
+            if (!petVisuals.mutations.includes(mut3)) petVisuals.mutations.push(mut3);
+        }
 
         for (let i = 0; i < dna.length; i++) {
             const commitLevel = parseInt(dna[i], 16); 

@@ -6,9 +6,15 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     container.id = `pet-${petId}`;
     container.className = `dna-pet tier-${petState.evolutionTier}`;
     container.style.setProperty('--pet-color', petState.color);
+    
+    // Growth Scaling (Removed as requested)
+    const scale = 1.0;
+    let filterStr = "";
     if (petState.colorShift) {
-        container.style.filter = `hue-rotate(${petState.colorShift}deg)`;
+        filterStr += `hue-rotate(${petState.colorShift}deg) `;
     }
+    
+    if (filterStr) container.style.filter = filterStr;
 
     const shadow = document.createElement('div');
     shadow.className = 'pet-shadow';
