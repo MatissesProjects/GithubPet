@@ -88,41 +88,66 @@
 .pet-face { position: absolute; top: 30%; left: 15%; width: 70%; height: 40%; z-index: 500; pointer-events: none; }
 .pet-eyes { width: 100%; height: 50%; display: flex; justify-content: space-between; position: relative; }
 
-/* Blinking & Winking */
-.pet-eyes::before, .pet-eyes::after { 
-    content: ''; 
-    width: 7px; 
-    height: 7px; 
-    background: #fff; 
-    border-radius: 50%; 
-    animation: pet-blink 4s infinite; 
-    border: 1px solid rgba(0,0,0,0.1);
-    transition: transform 0.2s, opacity 0.2s;
+/* Eyes & Pupils */
+.pet-eye {
+    width: 7px;
+    height: 7px;
+    background: #000;
+    border-radius: 50%;
     position: relative;
     overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.1);
+    animation: pet-blink 4s infinite;
 }
 
 .pet-pupil {
     position: absolute;
-    width: 3px;
-    height: 3px;
-    background: #000;
+    width: 3.5px;
+    height: 3.5px;
+    background: #fff;
     border-radius: 50%;
     top: 50%;
     left: 50%;
     transform: translate(calc(-50% + var(--look-x, 0px)), calc(-50% + var(--look-y, 0px)));
     transition: transform 0.3s ease-out;
+    box-shadow: 0 0 4px #fff, 0 0 2px #fff;
 }
+
+/* --- EYE TYPES --- */
+.eye-type-large { width: 10px; height: 10px; }
+.eye-type-large .pet-pupil { width: 5px; height: 5px; }
+
+.eye-type-narrow { height: 4px; border-radius: 2px; }
+.eye-type-narrow .pet-pupil { height: 2px; width: 4px; }
+
+.eye-type-angry { transform: rotate(15deg); }
+.eye-type-angry.eye-right { transform: rotate(-15deg); }
+.eye-type-angry::before { content: ''; position: absolute; top: -2px; left: -2px; width: 120%; height: 40%; background: var(--pet-color); z-index: 10; transform: rotate(-10deg); }
+
+.eye-type-cute { border: 2px solid #fff; }
+.eye-type-cute .pet-pupil { width: 4px; height: 4px; }
+.eye-type-cute .pet-pupil::after { content: ''; position: absolute; top: 1px; left: 1px; width: 1.5px; height: 1.5px; background: #fff; border-radius: 50%; filter: blur(0.5px); }
+
+.eye-type-cyclops.eye-right { display: none; }
+.eye-type-cyclops.eye-left { position: absolute; left: 50%; transform: translateX(-50%); width: 12px; height: 12px; }
+
+.eye-type-googly { animation: googly-shake 0.5s infinite; }
+@keyframes googly-shake { 0%, 100% { transform: translate(0,0); } 25% { transform: translate(1px, -1px); } 75% { transform: translate(-1px, 1px); } }
+
+.eye-type-sparkle .pet-pupil { clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 6px; height: 6px; box-shadow: 0 0 8px #fff; }
+
+.eye-type-robot { border-radius: 1px; background: #111; border: 1px solid #0f0; }
+.eye-type-robot .pet-pupil { background: #0f0; border-radius: 0; box-shadow: 0 0 5px #0f0; width: 3px; height: 3px; }
 
 @keyframes pet-blink {
-    0%, 90%, 100% { opacity: 1; transform: scaleY(1); }
-    95% { opacity: 0.3; transform: scaleY(0.1); }
+    0%, 90%, 100% { transform: scaleY(1); }
+    95% { transform: scaleY(0.1); }
 }
 
-.pet-eyes.is-winking::after {
+.pet-eyes.is-winking .eye-right {
     animation: none;
     transform: scaleY(0.1);
-    opacity: 0.3;
+    opacity: 0.5;
 }
 
 .pet-face::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: radial-gradient(circle, rgba(255,100,100,0.6) 0%, transparent 70%); background-size: 6px 4px; background-repeat: space; opacity: 0.8; }

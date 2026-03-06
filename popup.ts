@@ -46,10 +46,10 @@ async function renderCollection() {
                 return petB.year.localeCompare(petA.year);
             }
             
-            // Sort by month descending
+            // Sort by month ascending
             const monthA = monthNames.indexOf(petA.month);
             const monthB = monthNames.indexOf(petB.month);
-            return monthB - monthA;
+            return monthA - monthB;
         });
 
     if (userPets.length === 0) {
