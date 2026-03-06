@@ -76,7 +76,18 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
 
     let statContent = "";
     if (isCurrentMonth) {
-// ...
+        const nextConsistency = petState.evolutionTier === 0 ? 7 : (petState.evolutionTier === 1 ? 14 : 21);
+        const nextCommits = petState.evolutionTier === 0 ? 20 : (petState.evolutionTier === 1 ? 50 : 100);
+        
+        const tierHint = petState.evolutionTier < 3 
+            ? `Next Stage at ${nextConsistency} days (Current: ${petState.dnaLength}) OR ${nextCommits} commits (Current: ${petState.totalCommits})`
+            : "Maximum Growth Reached!";
+
+        const nextComplexityCommits = (petState.complexity + 1) * 15;
+        const complexityHint = petState.complexity < 5
+            ? `More complexity at ${nextComplexityCommits} total commits`
+            : "Max Complexity Reached!";
+
         statContent = `
             <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">🌱 ${petState.growthLabel}</div>
             Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
