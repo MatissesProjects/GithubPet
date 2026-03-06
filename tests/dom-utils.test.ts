@@ -27,6 +27,7 @@ describe('DOM Utilities', () => {
             const mock = {
                 getAttribute: (name: string) => {
                     if (name === 'aria-label') return "5 contributions on Wednesday, March 4, 2026";
+                    if (name === 'data-date') return "2026-03-04";
                     return null;
                 }
             } as any;
@@ -37,6 +38,7 @@ describe('DOM Utilities', () => {
             const mock = {
                 getAttribute: (name: string) => {
                     if (name === 'aria-label') return "No contributions on Sunday, March 1, 2026";
+                    if (name === 'data-date') return "2026-03-01";
                     return null;
                 }
             } as any;
@@ -51,7 +53,7 @@ describe('DOM Utilities', () => {
                     return null;
                 }
             } as any;
-            expect(getCommitCount(mock)).toBe(8);
+            expect(getCommitCount(mock)).toBe(10);
         });
     });
 

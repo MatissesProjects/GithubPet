@@ -40,31 +40,48 @@ export function getCommitCount(day: HTMLElement): number {
     const dataCount = day.getAttribute('data-count');
     if (dataCount) return parseInt(dataCount, 10);
 
-    const label = day.getAttribute('aria-label');
+    const dateStr = day.getAttribute('data-date'); // e.g. "2026-03-06"
+    
+    // Some GitHub UI versions use 'aria-label', some put text inside <span class="sr-only">
+    let label = day.getAttribute('aria-label') || day.textContent || '';
+    
+    // Also check for tooltips if possible
+    const tooltipId = day.getAttribute('aria-describedby');
+    if (tooltipId) {
+        const tooltipEl = document.getElementById(tooltipId);
+        if (tooltipEl) label += ' ' + (tooltipEl.textContent || '');
+    }
+
     if (label) {
-        // Look for the number immediately followed by "contribution" or similar
-        // This handles "5 contributions", "1 contribution", and localized versions if they follow the pattern
-        const match = label.match(/(\d+)\s+contribut/i);
-        if (match) return parseInt(match[1], 10);
-        
-        // Handle "No contributions"
         if (label.toLowerCase().includes('no contribution')) return 0;
 
-        // Fallback: If the label is just "5 on March 6" or similar
-        // We look for a number that isn't the year (4 digits) or a small day number at the end
-        // But actually, GitHub labels are usually consistent. 
-        // Let's try to find the first number that isn't a year.
-        const numbers = label.match(/\d+/g);
+        // Extract all numbers from the label, ignoring commas in large numbers
+        const cleanLabel = label.replace(/,/g, '');
+        let numbers = cleanLabel.match(/\d+/g);
         if (numbers) {
-            for (const n of numbers) {
-                if (n.length < 4) return parseInt(n, 10);
+            let filtered = numbers.map(Number);
+            
+            // If we have a date, filter out its components from the numbers list
+            if (dateStr) {
+                const [y, m, d] = dateStr.split('-').map(Number);
+                // Remove one instance of each date part
+                const toRemove = [y, m, d];
+                for (const val of toRemove) {
+                    const idx = filtered.indexOf(val);
+                    if (idx !== -1) filtered.splice(idx, 1);
+                }
+            }
+
+            // The largest remaining number is almost certainly the commit count
+            if (filtered.length > 0) {
+                return Math.max(...filtered);
             }
         }
     }
     
-    // Last fallback: use data-level as an estimate (L1=1-2, L2=3-5, L3=6-10, L4=11+)
+    // Last fallback: use data-level as an estimate (L1=1, L2=4, L3=10, L4=20)
     const level = parseInt(day.getAttribute('data-level') || '0', 10);
-    const estimates = [0, 1, 4, 8, 15]; // Slightly higher estimates to favor growth
+    const estimates = [0, 1, 4, 10, 20];
     return estimates[level] || 0;
 }
 
