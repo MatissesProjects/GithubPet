@@ -73,16 +73,30 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     // Map signature characters to months based on newest-to-oldest sequence
     const sigByMonth: Record<string, string> = {};
     if (daySigs.length > 0) {
-        for (let i = 0; i < daySigs.length; i++) {
-            const dayIndex = yearDays.length - 1 - i;
-            if (dayIndex < 0) break;
+        const now = new Date();
+        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        // Find the last day that is not in the future to start mapping from
+        let lastPastDayIdx = yearDays.length - 1;
+        while (lastPastDayIdx >= 0) {
+            const date = yearDays[lastPastDayIdx].getAttribute('data-date');
+            if (date && date <= todayStr) break;
+            lastPastDayIdx--;
+        }
 
-            const dateStr = yearDays[dayIndex].getAttribute('data-date');
-            if (dateStr) {
-                const { month, year } = parseDateParts(dateStr);
-                const key = `${monthNames[month]}-${year}`;
-                if (!sigByMonth[key]) sigByMonth[key] = "";
-                sigByMonth[key] += daySigs[i];
+        if (lastPastDayIdx >= 0) {
+            for (let i = 0; i < daySigs.length; i++) {
+                const dayIndex = lastPastDayIdx - i;
+                if (dayIndex < 0) break;
+
+                const dayEl = yearDays[dayIndex];
+                const dateStr = dayEl.getAttribute('data-date');
+                if (dateStr) {
+                    const { month, year } = parseDateParts(dateStr);
+                    const key = `${monthNames[month]}-${year}`;
+                    if (!sigByMonth[key]) sigByMonth[key] = "";
+                    sigByMonth[key] += daySigs[i];
+                }
             }
         }
     }
@@ -132,24 +146,33 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
 async function trySpawnCollection() {
     if (!isContextValid()) return;
     if (isInitializing) return;
-    
-    const username = getActiveUsername();
-    const viewedYear = getCurrentViewedYear();
-    if (!username) return;
 
-    chrome.storage.local.set({ viewedYear });
-
-    const sigElement = document.getElementById('gh-pulse-signature');
-    if (sigElement) {
-        const sigChars = extractSignatureChars(sigElement);
-        if (sigChars.length >= 4) await syncMonthlyPets(username, sigChars);
-    }
+    // Check if graph exists first
+    const graphContainer = document.querySelector('.js-calendar-graph');
+    if (!graphContainer) return; 
 
     isInitializing = true;
     try {
+        const username = getActiveUsername();
+        const viewedYear = getCurrentViewedYear();
+        if (!username) return;
+
+        chrome.storage.local.set({ viewedYear });
+
+        const sigElement = document.getElementById('gh-pulse-signature');
+        if (sigElement) {
+            const sigChars = extractSignatureChars(sigElement);
+            // Small delay to ensure GitHub tooltips/labels are populated in DOM
+            if (sigChars.length >= 4) {
+                await new Promise(r => setTimeout(r, 500));
+                await syncMonthlyPets(username, sigChars);
+            }
+        }
+
         const result = await chrome.storage.local.get(['petCollection']);
         let collection = result.petCollection || {};
         let collectionRepaired = false;
+// ... (rest of repaired loop)
 
         const now = new Date();
         const currentMonthIndex = now.getMonth();
@@ -158,11 +181,18 @@ async function trySpawnCollection() {
 
         for (const id in collection) {
             const parts = id.split('-');
-            const year = parts[1];
-            const monthName = parts[2];
+            if (parts.length < 3) {
+                delete collection[id];
+                collectionRepaired = true;
+                continue;
+            }
+            
+            // Extract from the end to handle usernames with hyphens
+            const monthName = parts[parts.length - 1];
+            const year = parts[parts.length - 2];
             const monthIndex = monthNames.indexOf(monthName);
 
-            const isMalformed = id.includes('undefined') || id.includes('Unknown') || parts.length < 3 || monthIndex === -1;
+            const isMalformed = monthIndex === -1;
             const isFuture = (year === currentYearStr && monthIndex > currentMonthIndex);
 
             if (isMalformed || isFuture) {
