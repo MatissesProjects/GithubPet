@@ -25,6 +25,7 @@ export interface PetState {
     personality: PetPersonality;
     title: string;
     evolutionTier: number;
+    growthLabel: string;
     colorShift: number; // For hue rotation evolution
     dnaLength: number;
     totalCommits: number;
@@ -94,8 +95,13 @@ const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
 export function generateProceduralPet(hexString: string, salt: string = ""): PetState {
     const dna = hexString;
-    const finalSeed = hashString(dna + salt);
-    const rng = seededRandom(finalSeed); 
+    // Identity should be stable for the month, using only salt
+    const identitySeed = hashString(salt);
+    const idRng = seededRandom(identitySeed); 
+
+    // Evolution seed depends on the growth (dna)
+    const evolutionSeed = hashString(dna + salt);
+    const evRng = seededRandom(evolutionSeed);
 
     let totalCommits = 0;
     for (const char of dna) {
@@ -104,47 +110,67 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
     }
     
     const complexity = Math.min(5, Math.floor(totalCommits / 15));
-    const evolutionTier = Math.min(3, Math.floor(dna.length / 10));
+
+    // New Evolution Logic: Grow from Hatchling to Legendary within the month
+    const consistency = dna.length;
+    let evolutionTier = 0;
+    let growthLabel = "Egg Hatchling";
+
+    if (consistency >= 21 || totalCommits >= 100) {
+        evolutionTier = 3;
+        growthLabel = "Legendary Growth";
+    } else if (consistency >= 14 || totalCommits >= 50) {
+        evolutionTier = 2;
+        growthLabel = "Elite Resident";
+    } else if (consistency >= 7 || totalCommits >= 20) {
+        evolutionTier = 1;
+        growthLabel = "Growing Fledgling";
+    }
+
+    // Use idRng for stable traits
+    const baseBody = pickRandom(PET_PARTS.bodies, idRng);
+    const title = `${pickRandom(TITLES.prefixes, idRng)} ${pickRandom(TITLES.suffixes, idRng)}`;
+    const personality = pickRandom(PERSONALITIES, idRng);
 
     // Color evolution: use premium colors at higher complexity
     const colorPool = complexity >= 3 ? PET_PARTS.premiumColors : PET_PARTS.colors;
-    const baseColor = pickRandom(colorPool, rng);
+    // We use idRng for color so it's stable, or maybe it should evolve?
+    // Let's use idRng for base color so it doesn't flip wildly, 
+    // but the pool choice still depends on complexity.
+    const baseColor = pickRandom(colorPool, idRng);
     
     // Color shift based on DNA length (progression through the month)
     const colorShift = (dna.length * 10) % 360;
 
-    const title = `${pickRandom(TITLES.prefixes, rng)} ${pickRandom(TITLES.suffixes, rng)}`;
-    const personality = pickRandom(PERSONALITIES, rng);
-
     let petVisuals: PetState = {
-        body: pickRandom(PET_PARTS.bodies, rng),
+        body: baseBody,
         color: baseColor,
         aura: 'none',
         mutations: [],
         accessory: 'none',
-        pattern: pickRandom(PET_PARTS.patterns, rng),
+        pattern: pickRandom(PET_PARTS.patterns, idRng),
         complexity,
         personality,
         title,
         evolutionTier,
+        growthLabel,
         colorShift,
         dnaLength: dna.length,
         totalCommits
     };
 
-    // Guaranteed modifications based on Tier
-    const modRng = seededRandom(finalSeed + 123);
+    // Evolution chain additions (stable given same DNA)
+    const modRng = seededRandom(evolutionSeed + 123);
     if (evolutionTier >= 1) petVisuals.mutations.push(pickRandom(PET_PARTS.mutations, modRng));
     if (evolutionTier >= 2) petVisuals.accessory = pickRandom(PET_PARTS.accessories, modRng);
     if (evolutionTier >= 3) petVisuals.aura = pickRandom(PET_PARTS.auras, modRng);
 
-    // Evolution chain additions
     for (let i = 0; i < dna.length; i++) {
         const commitLevel = parseInt(dna[i], 16); 
         if (isNaN(commitLevel)) continue;
 
         if (commitLevel >= 12) {
-            const mRng = seededRandom(finalSeed + i + 1);
+            const mRng = seededRandom(evolutionSeed + i + 1);
             const newMutation = pickRandom(PET_PARTS.mutations, mRng);
             if (!petVisuals.mutations.includes(newMutation)) {
                 petVisuals.mutations.push(newMutation);
@@ -152,7 +178,7 @@ export function generateProceduralPet(hexString: string, salt: string = ""): Pet
         }
 
         if (commitLevel === 11 && petVisuals.accessory === 'none') {
-            const aRng = seededRandom(finalSeed + i + 2);
+            const aRng = seededRandom(evolutionSeed + i + 2);
             petVisuals.accessory = pickRandom(PET_PARTS.accessories, aRng);
         }
     }

@@ -63,25 +63,28 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
 
     let statContent = "";
     if (isCurrentMonth) {
-        const nextTierDna = (petState.evolutionTier + 1) * 10;
+        const nextConsistency = petState.evolutionTier === 0 ? 7 : (petState.evolutionTier === 1 ? 14 : 21);
+        const nextCommits = petState.evolutionTier === 0 ? 20 : (petState.evolutionTier === 1 ? 50 : 100);
+        
         const tierHint = petState.evolutionTier < 3 
-            ? `Next Tier at ${nextTierDna} days (Current: ${petState.dnaLength})`
-            : "Max Evolution Tier Reached!";
+            ? `Next Stage at ${nextConsistency} days OR ${nextCommits} commits`
+            : "Maximum Growth Reached!";
 
         const nextComplexityCommits = (petState.complexity + 1) * 15;
         const complexityHint = petState.complexity < 5
-            ? `More complexity at ${nextComplexityCommits} total commits (Current: ${petState.totalCommits})`
+            ? `More complexity at ${nextComplexityCommits} total commits`
             : "Max Complexity Reached!";
 
         statContent = `
+            <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">🌱 ${petState.growthLabel}</div>
             Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
             Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span>
         `;
     } else {
         // Achievements for past pets
-        const achievement = petState.evolutionTier >= 2 ? "🏆 Legendary Growth" : 
+        const achievement = petState.evolutionTier >= 3 ? `🏆 ${petState.growthLabel}` : 
                            petState.complexity >= 4 ? "🌟 Master Artisan" : 
-                           petState.dnaLength >= 20 ? "📅 Dedicated Resident" : "🥚 Early Hatchling";
+                           `📅 ${petState.growthLabel}`;
         
         statContent = `
             <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">${achievement}</div>

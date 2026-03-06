@@ -117,13 +117,24 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
                 
                 // Occasionally show evolution hints instead of personality phrases
                 if (Math.random() > 0.7 && (currentMood === 'happy' || currentMood === 'ecstatic')) {
-                    const nextTierDna = (petState.evolutionTier + 1) * 10;
-                    const nextComplexityCommits = (petState.complexity + 1) * 15;
+                    const nextConsistency = petState.evolutionTier === 0 ? 7 : (petState.evolutionTier === 1 ? 14 : 21);
+                    const nextCommits = petState.evolutionTier === 0 ? 20 : (petState.evolutionTier === 1 ? 50 : 100);
                     
                     if (petState.evolutionTier < 3 && Math.random() > 0.5) {
-                        phrase = `I need ${nextTierDna - petState.dnaLength} more days of commits to grow!`;
+                        const daysLeft = Math.max(0, nextConsistency - petState.dnaLength);
+                        const commitsLeft = Math.max(0, nextCommits - petState.totalCommits);
+                        
+                        if (daysLeft > 0 && (Math.random() > 0.5 || commitsLeft <= 0)) {
+                            phrase = `Only ${daysLeft} more days until I grow!`;
+                        } else if (commitsLeft > 0) {
+                            phrase = `I need about ${commitsLeft} more commits to evolve!`;
+                        }
                     } else if (petState.complexity < 5) {
-                        phrase = `Feed me ${nextComplexityCommits - petState.totalCommits} more total commits!`;
+                        const nextComplexityCommits = (petState.complexity + 1) * 15;
+                        const complexityLeft = Math.max(0, nextComplexityCommits - petState.totalCommits);
+                        if (complexityLeft > 0) {
+                            phrase = `Feed me ${complexityLeft} more commits for more complexity!`;
+                        }
                     }
                 }
 
