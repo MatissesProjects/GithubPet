@@ -1,4 +1,5 @@
 import { CollectionPet } from './engine.js';
+import { monthNames } from './config.js';
 
 async function getCurrentUser(): Promise<string | null> {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true });
@@ -36,7 +37,20 @@ async function renderCollection() {
         .filter(([_, data]: [string, any]) => {
             return data.username === user && (!viewedYear || data.year === viewedYear);
         })
-        .sort((a, b) => (b[1] as any).year.localeCompare((a[1] as any).year));
+        .sort((a, b) => {
+            const petA = a[1] as CollectionPet;
+            const petB = b[1] as CollectionPet;
+            
+            // Sort by year descending
+            if (petA.year !== petB.year) {
+                return petB.year.localeCompare(petA.year);
+            }
+            
+            // Sort by month descending
+            const monthA = monthNames.indexOf(petA.month);
+            const monthB = monthNames.indexOf(petB.month);
+            return monthB - monthA;
+        });
 
     if (userPets.length === 0) {
         statusEl.textContent = `No pets found for ${user} in ${viewedYear || 'this year'}. Load a graph!`;
