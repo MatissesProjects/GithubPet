@@ -67,24 +67,21 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     const currentYearStr = now.getFullYear().toString();
     const isCurrentMonth = (monthName === currentMonthName && yearStr === currentYearStr);
 
+    // Normalization Logic for "Worst Month" / Efficiency
+    const monthIndex = monthNames.indexOf(monthName);
+    const daysInMonth = new Date(parseInt(yearStr), monthIndex + 1, 0).getDate();
+    const daysPassed = isCurrentMonth ? now.getDate() : daysInMonth;
+    const efficiency = petState.totalCommits / Math.max(1, daysPassed);
+    const roundedEff = efficiency.toFixed(1);
+
     let statContent = "";
     if (isCurrentMonth) {
-        const nextConsistency = petState.evolutionTier === 0 ? 7 : (petState.evolutionTier === 1 ? 14 : 21);
-        const nextCommits = petState.evolutionTier === 0 ? 20 : (petState.evolutionTier === 1 ? 50 : 100);
-        
-        const tierHint = petState.evolutionTier < 3 
-            ? `Next Stage at ${nextConsistency} days (Current: ${petState.dnaLength}) OR ${nextCommits} commits (Current: ${petState.totalCommits})`
-            : "Maximum Growth Reached!";
-
-        const nextComplexityCommits = (petState.complexity + 1) * 15;
-        const complexityHint = petState.complexity < 5
-            ? `More complexity at ${nextComplexityCommits} total commits`
-            : "Max Complexity Reached!";
-
+// ...
         statContent = `
             <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">🌱 ${petState.growthLabel}</div>
             Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
-            Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span>
+            Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span><br>
+            Efficiency: ${roundedEff} <span style="font-size: 9px; color: #8b949e;">(commits/day)</span>
         `;
     } else {
         // Achievements for past pets
@@ -95,7 +92,8 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
         statContent = `
             <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">${achievement}</div>
             Final Tier: ${petState.evolutionTier}/3<br>
-            Final Complexity: ${petState.complexity}/5
+            Final Complexity: ${petState.complexity}/5<br>
+            Efficiency: ${roundedEff} <span style="font-size: 9px; color: #8b949e;">(commits/day)</span>
         `;
     }
     
@@ -108,6 +106,7 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
         </div>
         <div style="text-align: left; margin-bottom: 8px;">
             <strong>${isCurrentMonth ? "Active Stats:" : "Achievements:"}</strong><br>
+            ${petState.efficiencyRank ? `<div style="color: #58a6ff; font-weight: bold; margin-bottom: 2px;">${petState.efficiencyRank}</div>` : ''}
             ${statContent}
             Personality: ${petState.personality}
         </div>

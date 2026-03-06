@@ -29,6 +29,7 @@ export interface PetState {
     colorShift: number; // For hue rotation evolution
     dnaLength: number;
     totalCommits: number;
+    efficiencyRank?: string; // e.g. "Record Holder", "Worst Month", "#2 in 2026"
 }
 
 export interface CollectionPet {

@@ -180,10 +180,36 @@ async function trySpawnCollection() {
             }
         });
 
+        // Calculate Efficiencies for all pets in the collection to determine ranking
+        const now = new Date();
+        const currentMonthName = monthNames[now.getMonth()];
+        const currentYearStr = now.getFullYear().toString();
+
+        const efficiencies: { id: string, eff: number }[] = [];
+        for (const petId in collection) {
+            const petData: CollectionPet = collection[petId];
+            if (petData.username === username) {
+                const monthIndex = monthNames.indexOf(petData.month);
+                const daysInMonth = new Date(parseInt(petData.year), monthIndex + 1, 0).getDate();
+                const daysPassed = (petData.month === currentMonthName && petData.year === currentYearStr) ? now.getDate() : daysInMonth;
+                const eff = (petData.totalCommits || 0) / Math.max(1, daysPassed);
+                efficiencies.push({ id: petId, eff });
+            }
+        }
+        efficiencies.sort((a, b) => b.eff - a.eff);
+
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
             if (petData.username === username && petData.enabled && petData.year === viewedYear) {
-                spawnPet(generateProceduralPet(petData.signature, petId, petData.totalCommits, petData.dnaLength), petId);
+                const rankIdx = efficiencies.findIndex(e => e.id === petId);
+                let efficiencyRank = "";
+                if (rankIdx === 0 && efficiencies.length > 1) efficiencyRank = "🏆 Year Record Holder";
+                else if (rankIdx === efficiencies.length - 1 && efficiencies.length > 1) efficiencyRank = "😴 Slowest Month";
+                else if (rankIdx !== -1) efficiencyRank = `#${rankIdx + 1} most active`;
+
+                const petState = generateProceduralPet(petData.signature, petId, petData.totalCommits, petData.dnaLength);
+                petState.efficiencyRank = efficiencyRank;
+                spawnPet(petState, petId);
             }
         }
     } finally {
