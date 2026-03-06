@@ -151,8 +151,10 @@ async function trySpawnCollection() {
         let collection = result.petCollection || {};
         let collectionRepaired = false;
 
-        const currentMonthIndex = new Date().getMonth();
-        const currentYearStr = new Date().getFullYear().toString();
+        const now = new Date();
+        const currentMonthIndex = now.getMonth();
+        const currentYearStr = now.getFullYear().toString();
+        const currentMonthName = monthNames[currentMonthIndex];
 
         for (const id in collection) {
             const parts = id.split('-');
@@ -181,10 +183,6 @@ async function trySpawnCollection() {
         });
 
         // Calculate Efficiencies for all pets in the collection to determine ranking
-        const now = new Date();
-        const currentMonthName = monthNames[now.getMonth()];
-        const currentYearStr = now.getFullYear().toString();
-
         const efficiencies: { id: string, eff: number }[] = [];
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
