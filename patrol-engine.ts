@@ -67,11 +67,11 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
 
         // 2. DYNAMIC GLOW (Set on container to avoid clipping and include all parts)
         // Check if there's an existing hue-rotate from createPetElement
-        const currentFilter = petElement.style.filter || '';
-        const hueRotateMatch = currentFilter.match(/hue-rotate\([^)]+\)/);
+        const currentStyle = petElement.getAttribute('style') || '';
+        const hueRotateMatch = currentStyle.match(/hue-rotate\([^)]+\)/);
         const hueRotate = hueRotateMatch ? hueRotateMatch[0] : '';
         
-        petElement.style.setProperty('filter', `${hueRotate} drop-shadow(0 0 12px ${squareColor})`, 'important');
+        petElement.style.filter = `${hueRotate} drop-shadow(0 0 12px ${squareColor})`.trim();
 
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
