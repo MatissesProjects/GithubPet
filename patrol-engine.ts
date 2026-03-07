@@ -4,9 +4,8 @@ import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils.js';
 
 export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, targetYear: string): HTMLElement[] {
     const now = new Date();
-    const futureLimit = new Date();
-    futureLimit.setDate(now.getDate() + PATROL_CONFIG.futureLimitDays);
-
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    
     const targetMonthIndex = monthNames.indexOf(targetMonthName);
     const yearNum = parseInt(targetYear, 10);
     
@@ -25,10 +24,14 @@ export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, t
         
         const [y, m, d] = dateStr.split('-').map(v => parseInt(v, 10));
         const date = new Date(y, m - 1, d);
+        
+        // Month boundary buffer
         const withinBuffer = date >= bufferStart && date <= bufferEnd;
-        const notTooFarFuture = date <= futureLimit;
+        
+        // Never patrol into the future
+        const isNotFuture = dateStr <= todayStr;
 
-        return withinBuffer && notTooFarFuture;
+        return withinBuffer && isNotFuture;
     });
 }
 

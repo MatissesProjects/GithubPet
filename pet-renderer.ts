@@ -88,6 +88,7 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     const daysPassed = isCurrentMonth ? now.getDate() : daysInMonth;
     const efficiency = petState.totalCommits / Math.max(1, daysPassed);
     const roundedEff = efficiency.toFixed(1);
+    const projectedTotal = Math.round(efficiency * daysInMonth);
 
     let statContent = "";
     if (isCurrentMonth) {
@@ -107,7 +108,8 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
             <div style="color: #f1e05a; font-size: 10px; margin-bottom: 2px;">🌱 ${petState.growthLabel}</div>
             Tier: ${petState.evolutionTier}/3 <span style="font-size: 9px; color: #8b949e;">(${tierHint})</span><br>
             Complexity: ${petState.complexity}/5 <span style="font-size: 9px; color: #8b949e;">(${complexityHint})</span><br>
-            Efficiency: ${roundedEff} <span style="font-size: 9px; color: #8b949e;">(commits/day)</span>
+            Efficiency: ${roundedEff} <span style="font-size: 9px; color: #8b949e;">(commits/day)</span><br>
+            <strong>Projected: ${projectedTotal}</strong> <span style="font-size: 9px; color: #8b949e;">(this month)</span>
         `;
     } else {
         // Achievements for past pets
