@@ -35,15 +35,15 @@ function spawnPet(petState: PetState, petId: string): void {
 async function syncMonthlyPets(username: string, sigChars: string[]) {
     if (!isContextValid()) return;
     
-    let hexStart = 0;
-    if (sigChars[0] === '0' && (sigChars[1] === 'x' || sigChars[1] === 'X')) {
-        hexStart = 2;
-    }
-    const cleanSigs = sigChars.slice(hexStart);
-
     // Get ALL days in the graph for full month analysis
     const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
     if (allDays.length === 0) return;
+
+    let hexStart = 0;
+    if (sigChars.length > 1 && sigChars[0] === '0' && (sigChars[1] === 'x' || sigChars[1] === 'X')) {
+        hexStart = 2;
+    }
+    const cleanSigs = sigChars.slice(hexStart);
 
     // 1. Calculate REAL monthly stats from the entire calendar graph
     const monthlyStats: Record<string, { totalCommits: number, dayCount: number, year: string, month: string }> = {};
@@ -76,7 +76,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         const now = new Date();
         const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         
-        // Find the last day that is not in the future to start mapping from
         let lastPastDayIdx = yearDays.length - 1;
         while (lastPastDayIdx >= 0) {
             const date = yearDays[lastPastDayIdx].getAttribute('data-date');
@@ -113,11 +112,8 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         const { totalCommits, dayCount, year, month } = monthlyStats[key];
         const monthIndex = monthNames.indexOf(month);
 
-        // Don't create pets for future months in current year
         if (year === currentYearStr && monthIndex > currentMonthIndex) continue;
         
-        // Use signature if we have it, otherwise fallback to zeros
-        // We always append the genesisBlock so the seed is consistent
         const rawSig = sigByMonth[key] || "0".repeat(30);
         const finalSig = rawSig + genesisBlock.join('');
         const petId = `${username}-${year}-${month}`;
@@ -147,7 +143,6 @@ async function trySpawnCollection() {
     if (!isContextValid()) return;
     if (isInitializing) return;
 
-    // Check if graph exists first
     const graphContainer = document.querySelector('.js-calendar-graph');
     if (!graphContainer) return; 
 
@@ -159,14 +154,28 @@ async function trySpawnCollection() {
 
         chrome.storage.local.set({ viewedYear });
 
-        const sigElement = document.getElementById('gh-pulse-signature');
-        if (sigElement) {
-            const sigChars = extractSignatureChars(sigElement);
-            // Small delay to ensure GitHub tooltips/labels are populated in DOM
-            if (sigChars.length >= 4) {
-                await new Promise(r => setTimeout(r, 500));
-                await syncMonthlyPets(username, sigChars);
+        // Helper to check if we actually found any commits
+        const checkTotalCommits = async () => {
+            const sigElement = document.getElementById('gh-pulse-signature');
+            const sigChars = sigElement ? extractSignatureChars(sigElement) : [];
+            await syncMonthlyPets(username, sigChars);
+            
+            const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
+            let total = 0;
+            for (const id in petCollection) {
+                if (petCollection[id].username === username) total += (petCollection[id].totalCommits || 0);
             }
+            return total;
+        };
+
+        // Initial delay for GitHub async rendering
+        await new Promise(r => setTimeout(r, 800));
+        let foundCommits = await checkTotalCommits();
+
+        // If we found 0 commits, retry once after another delay (GitHub can be slow)
+        if (foundCommits === 0) {
+            await new Promise(r => setTimeout(r, 1500));
+            await checkTotalCommits();
         }
 
         const result = await chrome.storage.local.get(['petCollection']);

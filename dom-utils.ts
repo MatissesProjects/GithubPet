@@ -42,46 +42,50 @@ export function getCommitCount(day: HTMLElement): number {
 
     const dateStr = day.getAttribute('data-date'); // e.g. "2026-03-06"
     
-    // Some GitHub UI versions use 'aria-label', some put text inside <span class="sr-only">
-    let label = day.getAttribute('aria-label') || day.textContent || '';
+    // Aggregate all possible text sources
+    let textSources = [
+        day.getAttribute('aria-label') || '',
+        day.textContent || ''
+    ];
     
-    // Also check for tooltips if possible
+    // Check for tooltips (modern GitHub uses specialized tooltip elements)
     const tooltipId = day.getAttribute('aria-describedby');
     if (tooltipId) {
         const tooltipEl = document.getElementById(tooltipId);
-        if (tooltipEl) label += ' ' + (tooltipEl.textContent || '');
+        if (tooltipEl) textSources.push(tooltipEl.textContent || '');
     }
 
-    if (label) {
-        if (label.toLowerCase().includes('no contribution')) return 0;
+    // Check for tooltips that are children
+    const childTooltip = day.querySelector('tool-tip');
+    if (childTooltip) textSources.push(childTooltip.textContent || '');
 
-        // Extract all numbers from the label, ignoring commas in large numbers
-        const cleanLabel = label.replace(/,/g, '');
-        let numbers = cleanLabel.match(/\d+/g);
-        if (numbers) {
-            let filtered = numbers.map(Number);
-            
-            // If we have a date, filter out its components from the numbers list
-            if (dateStr) {
-                const [y, m, d] = dateStr.split('-').map(Number);
-                // Remove one instance of each date part
-                const toRemove = [y, m, d];
-                for (const val of toRemove) {
-                    const idx = filtered.indexOf(val);
-                    if (idx !== -1) filtered.splice(idx, 1);
-                }
-            }
+    const combinedText = textSources.join(' ').replace(/,/g, '');
+    
+    if (combinedText.toLowerCase().includes('no contribution')) return 0;
 
-            // The largest remaining number is almost certainly the commit count
-            if (filtered.length > 0) {
-                return Math.max(...filtered);
+    const allNumbers = combinedText.match(/\d+/g);
+    if (allNumbers) {
+        let filtered = allNumbers.map(Number);
+        
+        if (dateStr) {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            // Remove the year, the day, and the month index (if it exists as a number)
+            const toRemove = [y, d, m]; 
+            for (const val of toRemove) {
+                const idx = filtered.indexOf(val);
+                if (idx !== -1) filtered.splice(idx, 1);
             }
+        }
+
+        // Return the largest number left - this is almost certainly the commit count
+        if (filtered.length > 0) {
+            return Math.max(...filtered);
         }
     }
     
-    // Last fallback: use data-level as an estimate (L1=1, L2=4, L3=10, L4=20)
+    // Last fallback: use data-level as an estimate (L1=1, L2=4, L3=10, L4=25)
     const level = parseInt(day.getAttribute('data-level') || '0', 10);
-    const estimates = [0, 1, 4, 10, 20];
+    const estimates = [0, 1, 4, 10, 25];
     return estimates[level] || 0;
 }
 
