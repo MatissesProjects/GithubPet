@@ -56,7 +56,7 @@ export function getCommitCount(day: HTMLElement): number {
     }
 
     // Check for tooltips that are children
-    const childTooltip = day.querySelector('tool-tip');
+    const childTooltip = (day instanceof HTMLElement) ? day.querySelector('tool-tip') : null;
     if (childTooltip) textSources.push(childTooltip.textContent || '');
 
     const combinedText = textSources.join(' ').replace(/,/g, '');

@@ -2,7 +2,14 @@ import type { PetState } from './engine.js';
 import { PERSONALITY_PHRASES, PATROL_CONFIG, monthNames } from './config.js';
 import { parseDateParts, getCommitCount, getL2Threshold } from './dom-utils.js';
 
+/** Caches pools by month/year to avoid repeated filtering on every move */
+const poolCache = new Map<string, HTMLElement[]>();
+let lastViewedYear: string | null = null;
+
 export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, targetYear: string): HTMLElement[] {
+    const cacheKey = `${targetMonthName}-${targetYear}`;
+    if (poolCache.has(cacheKey)) return poolCache.get(cacheKey)!;
+
     const now = new Date();
     const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     
@@ -18,78 +25,78 @@ export function getPatrolPool(allDays: HTMLElement[], targetMonthName: string, t
     const bufferEnd = new Date(monthEnd);
     bufferEnd.setDate(bufferEnd.getDate() + 4);
 
-    return allDays.filter(day => {
+    const pool = allDays.filter(day => {
         const dateStr = day.getAttribute('data-date');
         if (!dateStr) return false;
         
+        // Quick string comparison for date filtering
+        const isNotFuture = dateStr <= todayStr;
+        if (!isNotFuture) return false;
+
         const [y, m, d] = dateStr.split('-').map(v => parseInt(v, 10));
         const date = new Date(y, m - 1, d);
-        
-        // Month boundary buffer
-        const withinBuffer = date >= bufferStart && date <= bufferEnd;
-        
-        // Never patrol into the future
-        const isNotFuture = dateStr <= todayStr;
-
-        return withinBuffer && isNotFuture;
+        return date >= bufferStart && date <= bufferEnd;
     });
+    
+    poolCache.set(cacheKey, pool);
+    return pool;
 }
 
 export function startPatrol(petElement: HTMLElement, petState: PetState): void {
+    // Extract ID parts once to handle hyphenated usernames robustly
     const idParts = petElement.id.replace('pet-', '').split('-');
-    const targetMonthName = idParts[2];
-    const targetYear = idParts[1];
+    const targetMonthName = idParts.find(p => monthNames.includes(p)) || "";
+    const targetYear = idParts.find(p => /^\d{4}$/.test(p)) || "";
 
     function moveToRandomDay() {
         if (!petElement.parentElement) return;
         
-        const allDays = Array.from(document.querySelectorAll('.js-calendar-graph rect.ContributionCalendar-day, .js-calendar-graph td.ContributionCalendar-day')) as HTMLElement[];
+        const graphContainer = document.querySelector('.js-calendar-graph');
+        if (!graphContainer) return;
+
+        // Reset cache if year changes or on heavy DOM changes (managed by content.ts triggers)
+        const currentYear = graphContainer.getAttribute('data-year');
+        if (currentYear !== lastViewedYear) {
+            poolCache.clear();
+            lastViewedYear = currentYear;
+        }
+
+        const allDays = Array.from(graphContainer.querySelectorAll('.ContributionCalendar-day')) as HTMLElement[];
         if (allDays.length === 0) return;
 
         let patrolPool = getPatrolPool(allDays, targetMonthName, targetYear);
         if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
-        const rect = targetDay.getBoundingClientRect();
-        const containerRect = (petElement.parentElement as HTMLElement).getBoundingClientRect();
+        
+        // Use offset-based positioning to reduce getBoundingClientRect calls
+        const targetX = targetDay.offsetLeft + (targetDay.offsetWidth / 2) - 12;
+        const targetY = targetDay.offsetTop + (targetDay.offsetHeight / 2) - 12;
 
         // 1. EXTRACT SQUARE COLOR
         const style = window.getComputedStyle(targetDay);
-        const inlineStyle = targetDay.getAttribute('style') || '';
-        
-        const extractColor = (prop: string) => {
-            const match = inlineStyle.match(new RegExp(`${prop}:\\s*(rgb\\([^;!]+?\\))`, 'i'));
-            return match ? match[1].trim() : null;
-        };
+        const squareColor = style.getPropertyValue('--color-calendar-graph-day-bg') || 
+                           style.fill || style.backgroundColor;
 
-        const inlineFill = extractColor('fill');
-        const inlineBg = extractColor('background-color');
-        
-        const squareColor = inlineFill || inlineBg || 
-            (style.fill !== 'none' && style.fill !== 'rgba(0, 0, 0, 0)' ? style.fill : style.backgroundColor);
-
-        // 2. DYNAMIC GLOW (Set on container to avoid clipping and include all parts)
-        // Check if there's an existing hue-rotate from createPetElement
+        // 2. DYNAMIC GLOW
         const currentStyle = petElement.getAttribute('style') || '';
         const hueRotateMatch = currentStyle.match(/hue-rotate\([^)]+\)/);
-        const hueRotate = hueRotateMatch ? hueRotateMatch[0] : '';
-        
-        petElement.style.filter = `${hueRotate} drop-shadow(0 0 12px ${squareColor})`.trim();
+        const filterStr = hueRotateMatch ? `${hueRotateMatch[0]} ` : '';
+        petElement.style.filter = `${filterStr}drop-shadow(0 0 12px ${squareColor})`.trim();
 
         const visual = petElement.querySelector('.pet-visual') as HTMLElement;
         if (visual) {
-            // Pulse animation trigger
             petElement.classList.remove('is-eating');
-            void petElement.offsetWidth; // Trigger reflow
+            void petElement.offsetWidth;
             petElement.classList.add('is-eating');
-            setTimeout(() => petElement.classList.remove('is-eating'), 1000);
+            setTimeout(() => { if (petElement) petElement.classList.remove('is-eating'); }, 1000);
         }
 
         // 3. WINKING
         const eyes = petElement.querySelector('.pet-eyes') as HTMLElement;
         if (eyes && Math.random() > 0.85) {
             eyes.classList.add('is-winking');
-            setTimeout(() => eyes.classList.remove('is-winking'), 600);
+            setTimeout(() => { if (eyes) eyes.classList.remove('is-winking'); }, 600);
         }
 
         const count = getCommitCount(targetDay);
@@ -110,10 +117,8 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         }
 
         petElement.classList.add('is-moving');
-        const targetX = rect.left - containerRect.left + (rect.width / 2) - 12;
-        const targetY = rect.top - containerRect.top + (rect.height / 2) - 12;
         
-        // Calculate look direction
+        // Calculate look direction relative to current position
         const currentX = parseFloat(petElement.style.left) || targetX;
         const currentY = parseFloat(petElement.style.top) || targetY;
         const dx = targetX - currentX;
@@ -121,7 +126,7 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         const dist = Math.sqrt(dx * dx + dy * dy);
         
         if (dist > 5) {
-            const lookX = (dx / dist) * 2; // max 2px offset
+            const lookX = (dx / dist) * 2;
             const lookY = (dy / dist) * 2;
             petElement.style.setProperty('--look-x', `${lookX}px`);
             petElement.style.setProperty('--look-y', `${lookY}px`);
@@ -135,7 +140,6 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
             if (speech && petState.personality && PERSONALITY_PHRASES[petState.personality]) {
                 let phrase = "";
                 
-                // Occasionally show evolution hints instead of personality phrases
                 if (Math.random() > 0.7 && (currentMood === 'happy' || currentMood === 'ecstatic')) {
                     const nextConsistency = petState.evolutionTier === 0 ? 7 : (petState.evolutionTier === 1 ? 14 : 21);
                     const nextCommits = petState.evolutionTier === 0 ? 20 : (petState.evolutionTier === 1 ? 50 : 100);
@@ -172,7 +176,7 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
                 }
             }
         }
-        setTimeout(() => petElement.classList.remove('is-moving'), PATROL_CONFIG.moveDuration);
+        setTimeout(() => { if (petElement) petElement.classList.remove('is-moving'); }, PATROL_CONFIG.moveDuration);
     }
 
     moveToRandomDay();

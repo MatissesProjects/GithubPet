@@ -126,25 +126,80 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     
     const tooltip = document.createElement('div');
     tooltip.className = 'dna-pet-tooltip';
-    tooltip.innerHTML = `
-        <div style="border-bottom: 1px solid #30363d; margin-bottom: 5px; padding-bottom: 5px;">
-            <strong style="color: #58a6ff;">${petState.title}</strong><br>
-            <small style="color: #8b949e;">Born: ${label}</small>
-        </div>
-        <div style="text-align: left; margin-bottom: 8px;">
-            <strong>${isCurrentMonth ? "Active Stats:" : "Achievements:"}</strong><br>
-            ${petState.efficiencyRank ? `<div style="color: #58a6ff; font-weight: bold; margin-bottom: 2px;">${petState.efficiencyRank}</div>` : ''}
-            ${statContent}
-            Personality: ${petState.personality}
-        </div>
-        <div style="text-align: left; border-top: 1px solid #30363d; padding-top: 5px;">
-            <strong>Traits:</strong><br>
-            Type: ${petState.body}<br>
-            Pattern: ${petState.pattern}<br>
-            ${petState.accessory !== 'none' ? `Accessory: ${petState.accessory}<br>` : ''}
-            Mutations: ${petState.mutations.join(', ') || 'None'}
-        </div>
-    `;
+    
+    // Header
+    const header = document.createElement('div');
+    header.style.borderBottom = '1px solid #30363d';
+    header.style.marginBottom = '5px';
+    header.style.paddingBottom = '5px';
+    
+    const titleEl = document.createElement('strong');
+    titleEl.style.color = '#58a6ff';
+    titleEl.textContent = petState.title;
+    header.appendChild(titleEl);
+    header.appendChild(document.createElement('br'));
+    
+    const birthEl = document.createElement('small');
+    birthEl.style.color = '#8b949e';
+    birthEl.textContent = `Born: ${label}`;
+    header.appendChild(birthEl);
+    tooltip.appendChild(header);
+
+    // Stats Body
+    const body = document.createElement('div');
+    body.style.textAlign = 'left';
+    body.style.marginBottom = '8px';
+    
+    const statsHeader = document.createElement('strong');
+    statsHeader.textContent = isCurrentMonth ? "Active Stats:" : "Achievements:";
+    body.appendChild(statsHeader);
+    body.appendChild(document.createElement('br'));
+
+    if (petState.efficiencyRank) {
+        const rankEl = document.createElement('div');
+        rankEl.style.color = '#58a6ff';
+        rankEl.style.fontWeight = 'bold';
+        rankEl.style.marginBottom = '2px';
+        rankEl.textContent = petState.efficiencyRank;
+        body.appendChild(rankEl);
+    }
+
+    const statContainer = document.createElement('div');
+    statContainer.innerHTML = statContent; // statContent is constructed internally from safe numbers/labels
+    body.appendChild(statContainer);
+
+    const personalityEl = document.createElement('div');
+    personalityEl.textContent = `Personality: ${petState.personality}`;
+    body.appendChild(personalityEl);
+    tooltip.appendChild(body);
+
+    // Traits Footer
+    const footer = document.createElement('div');
+    footer.style.textAlign = 'left';
+    footer.style.borderTop = '1px solid #30363d';
+    footer.style.paddingTop = '5px';
+    
+    const traitsHeader = document.createElement('strong');
+    traitsHeader.textContent = "Traits:";
+    footer.appendChild(traitsHeader);
+    footer.appendChild(document.createElement('br'));
+    
+    const traitsList = document.createElement('div');
+    traitsList.textContent = `Type: ${petState.body}\nPattern: ${petState.pattern}`;
+    traitsList.style.whiteSpace = 'pre-line';
+    footer.appendChild(traitsList);
+
+    if (petState.accessory !== 'none') {
+        const accTrait = document.createElement('div');
+        accTrait.textContent = `Accessory: ${petState.accessory}`;
+        footer.appendChild(accTrait);
+    }
+
+    const mutTrait = document.createElement('div');
+    mutTrait.textContent = `Mutations: ${petState.mutations.join(', ') || 'None'}`;
+    footer.appendChild(mutTrait);
+    
+    tooltip.appendChild(footer);
     container.appendChild(tooltip);
 
     // Speech Bubble

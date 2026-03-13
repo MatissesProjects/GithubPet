@@ -13,9 +13,18 @@ import { startPatrol } from './patrol-engine';
 
 // --- 3. EXTRACTION & OBSERVER ---
 let isInitializing = false;
+let spawnTimeout: any = null;
 
 function isContextValid(): boolean {
     return typeof chrome !== 'undefined' && !!chrome.runtime && !!chrome.runtime.id;
+}
+
+/** Throttled wrapper to prevent redundant spawning and excessive storage overhead */
+function requestSpawnCollection(delay = 300): void {
+    if (spawnTimeout) clearTimeout(spawnTimeout);
+    spawnTimeout = setTimeout(() => {
+        if (isContextValid()) trySpawnCollection();
+    }, delay);
 }
 
 function spawnPet(petState: PetState, petId: string): void {
@@ -257,22 +266,32 @@ async function trySpawnCollection() {
 
 if (isContextValid()) {
     chrome.storage.onChanged.addListener((changes) => {
-        if (isContextValid() && changes.petCollection) trySpawnCollection();
+        if (isContextValid() && changes.petCollection) requestSpawnCollection(100);
     });
     
-    const observer = new MutationObserver(() => {
-        if (isContextValid()) trySpawnCollection();
+    const observer = new MutationObserver((mutations) => {
+        if (!isContextValid()) return;
+        
+        // Filter mutations to only trigger on relevant changes (e.g., calendar updates or navigations)
+        const relevant = mutations.some(m => 
+            m.target instanceof HTMLElement && 
+            (m.target.classList.contains('js-calendar-graph') || 
+             m.target.querySelector('.js-calendar-graph') ||
+             m.target.id === 'gh-pulse-signature')
+        );
+
+        if (relevant) requestSpawnCollection(800);
     });
     
-    observer.observe(document.body, { childList: true, subtree: true, characterData: true });
+    observer.observe(document.body, { childList: true, subtree: true });
     
     const collectionInterval = setInterval(() => {
         if (!isContextValid()) {
             clearInterval(collectionInterval);
             return;
         }
-        trySpawnCollection();
-    }, 3000);
+        requestSpawnCollection(10000);
+    }, 15000); // 15s heartbeat to catch edge cases
     
-    trySpawnCollection();
+    requestSpawnCollection(500);
 }
