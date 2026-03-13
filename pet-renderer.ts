@@ -73,8 +73,8 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     
     // Tooltip
     const idParts = petId.split('-');
-    const monthName = idParts[idParts.length - 1] || "???";
-    const yearStr = idParts[idParts.length - 2] || "???";
+    const yearStr = idParts.find(p => /^\d{4}$/.test(p)) || "???";
+    const monthName = idParts.find(p => monthNames.includes(p)) || "???";
     const label = `${monthName} ${yearStr}`;
 
     const now = new Date();

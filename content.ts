@@ -120,8 +120,9 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
 
         const existing = petCollection[petId];
         // Only update if signature changed, or if we have MORE (or equal) observed days than before (to avoid partial month overwrites)
-        const isMoreData = !existing || (observedDays >= (existing.observedDays || 0));
-        const needsUpdate = !existing || existing.signature !== finalSig || (isMoreData && (existing.totalCommits !== totalCommits || existing.dnaLength !== dayCount));
+        const isMoreData = !existing || (observedDays > (existing.observedDays || 0));
+        const statsChanged = !existing || existing.totalCommits !== totalCommits || existing.dnaLength !== dayCount;
+        const needsUpdate = !existing || existing.signature !== finalSig || (observedDays === existing.observedDays && statsChanged) || isMoreData;
 
         if (needsUpdate) {
             petCollection[petId] = {

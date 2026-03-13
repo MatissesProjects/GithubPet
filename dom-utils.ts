@@ -63,7 +63,7 @@ export function getCommitCount(day: HTMLElement): number {
     
     if (combinedText.toLowerCase().includes('no contribution')) return 0;
 
-    const contributionMatch = combinedText.match(/(\d+)\s+contribution/i);
+    const contributionMatch = combinedText.length > 10 && combinedText.match(/(\d+)\s+contribution/i);
     if (contributionMatch) return parseInt(contributionMatch[1], 10);
 
     const allNumbers = combinedText.match(/\d+/g);

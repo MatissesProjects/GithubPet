@@ -174,7 +174,7 @@ export function generateProceduralPet(hexString: string, salt: string = "", tota
         colorShift,
         dnaLength: consistency,
         totalCommits,
-        observedDays: observedDaysOverride || (dnaLengthOverride !== undefined ? dnaLengthOverride : (dna.length > 0 ? dna.length : 30)),
+        observedDays: observedDaysOverride || (dnaLengthOverride !== undefined ? dnaLengthOverride : (dna.length > 0 ? dna.length : 28)),
         eyeType: pickRandom(PET_PARTS.eyes, idRng)
     };
 
