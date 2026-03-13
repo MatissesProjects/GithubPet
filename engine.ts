@@ -31,6 +31,7 @@ export interface PetState {
     colorShift: number; // For hue rotation evolution
     dnaLength: number;
     totalCommits: number;
+    observedDays: number;
     efficiencyRank?: string; // e.g. "Record Holder", "Worst Month", "#2 in 2026"
     eyeType: PetEye;
 }
@@ -44,6 +45,7 @@ export interface CollectionPet {
     addedAt: number;
     totalCommits?: number;
     dnaLength?: number;
+    observedDays?: number;
 }
 
 export interface PetParts {
@@ -102,7 +104,7 @@ export const PET_PARTS: PetParts = {
 
 const PERSONALITIES = Object.keys(PERSONALITY_PHRASES) as PetPersonality[];
 
-export function generateProceduralPet(hexString: string, salt: string = "", totalCommitsOverride?: number, dnaLengthOverride?: number): PetState {
+export function generateProceduralPet(hexString: string, salt: string = "", totalCommitsOverride?: number, dnaLengthOverride?: number, observedDaysOverride?: number): PetState {
     const dna = hexString;
     // Identity should be stable for the month, using only salt
     const identitySeed = hashString(salt);
@@ -172,6 +174,7 @@ export function generateProceduralPet(hexString: string, salt: string = "", tota
         colorShift,
         dnaLength: consistency,
         totalCommits,
+        observedDays: observedDaysOverride || (dnaLengthOverride !== undefined ? dnaLengthOverride : (dna.length > 0 ? dna.length : 30)),
         eyeType: pickRandom(PET_PARTS.eyes, idRng)
     };
 

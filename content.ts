@@ -45,8 +45,11 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     }
     const cleanSigs = sigChars.slice(hexStart);
 
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     // 1. Calculate REAL monthly stats from the entire calendar graph
-    const monthlyStats: Record<string, { totalCommits: number, dayCount: number, year: string, month: string }> = {};
+    const monthlyStats: Record<string, { totalCommits: number, dayCount: number, year: string, month: string, observedDays: number }> = {};
     for (const dayEl of allDays) {
         const dateStr = dayEl.getAttribute('data-date');
         if (!dateStr) continue;
@@ -56,11 +59,12 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         const yearStr = year.toString();
         const key = `${monthName}-${yearStr}`;
 
-        if (!monthlyStats[key]) monthlyStats[key] = { totalCommits: 0, dayCount: 0, year: yearStr, month: monthName };
+        if (!monthlyStats[key]) monthlyStats[key] = { totalCommits: 0, dayCount: 0, year: yearStr, month: monthName, observedDays: 0 };
         
         const commits = getCommitCount(dayEl);
         monthlyStats[key].totalCommits += commits;
         if (commits > 0) monthlyStats[key].dayCount += 1;
+        if (dateStr <= todayStr) monthlyStats[key].observedDays += 1;
     }
 
     // 2. Identify the pulse signature parts (if available)
@@ -73,9 +77,6 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     // Map signature characters to months based on newest-to-oldest sequence
     const sigByMonth: Record<string, string> = {};
     if (daySigs.length > 0) {
-        const now = new Date();
-        const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-        
         let lastPastDayIdx = yearDays.length - 1;
         while (lastPastDayIdx >= 0) {
             const date = yearDays[lastPastDayIdx].getAttribute('data-date');
@@ -104,12 +105,11 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
     const { petCollection = {} } = await chrome.storage.local.get(['petCollection']);
     let collectionChanged = false;
 
-    const now = new Date();
     const currentMonthIndex = now.getMonth();
     const currentYearStr = now.getFullYear().toString();
 
     for (const key in monthlyStats) {
-        const { totalCommits, dayCount, year, month } = monthlyStats[key];
+        const { totalCommits, dayCount, year, month, observedDays } = monthlyStats[key];
         const monthIndex = monthNames.indexOf(month);
 
         if (year === currentYearStr && monthIndex > currentMonthIndex) continue;
@@ -119,7 +119,9 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
         const petId = `${username}-${year}-${month}`;
 
         const existing = petCollection[petId];
-        const needsUpdate = !existing || existing.signature !== finalSig || existing.totalCommits !== totalCommits || existing.dnaLength !== dayCount;
+        // Only update if signature changed, or if we have MORE (or equal) observed days than before (to avoid partial month overwrites)
+        const isMoreData = !existing || (observedDays >= (existing.observedDays || 0));
+        const needsUpdate = !existing || existing.signature !== finalSig || (isMoreData && (existing.totalCommits !== totalCommits || existing.dnaLength !== dayCount));
 
         if (needsUpdate) {
             petCollection[petId] = {
@@ -130,7 +132,8 @@ async function syncMonthlyPets(username: string, sigChars: string[]) {
                 enabled: true,
                 addedAt: existing?.addedAt || Date.now(),
                 totalCommits,
-                dnaLength: dayCount
+                dnaLength: dayCount,
+                observedDays
             };
             collectionChanged = true;
         }
@@ -225,11 +228,8 @@ async function trySpawnCollection() {
         const efficiencies: { id: string, eff: number }[] = [];
         for (const petId in collection) {
             const petData: CollectionPet = collection[petId];
-            if (petData.username === username) {
-                const monthIndex = monthNames.indexOf(petData.month);
-                const daysInMonth = new Date(parseInt(petData.year), monthIndex + 1, 0).getDate();
-                const daysPassed = (petData.month === currentMonthName && petData.year === currentYearStr) ? now.getDate() : daysInMonth;
-                const eff = (petData.totalCommits || 0) / Math.max(1, daysPassed);
+            if (petData.username === username && petData.year === viewedYear) {
+                const eff = (petData.totalCommits || 0) / Math.max(1, petData.observedDays || 30);
                 efficiencies.push({ id: petId, eff });
             }
         }
@@ -244,7 +244,7 @@ async function trySpawnCollection() {
                 else if (rankIdx === efficiencies.length - 1 && efficiencies.length > 1) efficiencyRank = "😴 Slowest Month";
                 else if (rankIdx !== -1) efficiencyRank = `#${rankIdx + 1} most active`;
 
-                const petState = generateProceduralPet(petData.signature, petId, petData.totalCommits, petData.dnaLength);
+                const petState = generateProceduralPet(petData.signature, petId, petData.totalCommits, petData.dnaLength, petData.observedDays);
                 petState.efficiencyRank = efficiencyRank;
                 spawnPet(petState, petId);
             }

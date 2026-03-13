@@ -73,8 +73,8 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     
     // Tooltip
     const idParts = petId.split('-');
-    const monthName = idParts[2] || "???";
-    const yearStr = idParts[1] || "???";
+    const monthName = idParts[idParts.length - 1] || "???";
+    const yearStr = idParts[idParts.length - 2] || "???";
     const label = `${monthName} ${yearStr}`;
 
     const now = new Date();
@@ -85,8 +85,7 @@ export function createPetElement(petState: PetState, petId: string): HTMLElement
     // Normalization Logic for "Worst Month" / Efficiency
     const monthIndex = monthNames.indexOf(monthName);
     const daysInMonth = new Date(parseInt(yearStr), monthIndex + 1, 0).getDate();
-    const daysPassed = isCurrentMonth ? now.getDate() : daysInMonth;
-    const efficiency = petState.totalCommits / Math.max(1, daysPassed);
+    const efficiency = petState.totalCommits / Math.max(1, petState.observedDays);
     const roundedEff = efficiency.toFixed(1);
     const projectedTotal = Math.round(efficiency * daysInMonth);
 
