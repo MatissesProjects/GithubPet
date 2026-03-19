@@ -22,11 +22,13 @@ async function getCurrentUser(): Promise<string | null> {
 async function renderCollection() {
     const container = document.getElementById('collection-list');
     const statusEl = document.getElementById('status');
-    if (!container || !statusEl) return;
+    const controlsEl = document.getElementById('controls');
+    if (!container || !statusEl || !controlsEl) return;
 
     const user = await getCurrentUser();
     if (!user) {
         statusEl.textContent = 'Visit a GitHub profile to see pets!';
+        controlsEl.style.display = 'none';
         return;
     }
 
@@ -55,11 +57,28 @@ async function renderCollection() {
     if (userPets.length === 0) {
         statusEl.textContent = `No pets found for ${user} in ${viewedYear || 'this year'}. Load a graph!`;
         container.innerHTML = '';
+        controlsEl.style.display = 'none';
         return;
     }
 
     statusEl.textContent = `Pets for ${user} (${viewedYear}):`;
+    controlsEl.style.display = 'block';
     container.innerHTML = '';
+
+    const allEnabled = userPets.every(([_, data]) => (data as CollectionPet).enabled);
+    const toggleAllBtn = document.getElementById('toggle-all') as HTMLButtonElement;
+    if (toggleAllBtn) {
+        toggleAllBtn.textContent = allEnabled ? 'Disable All Pets' : 'Enable All Pets';
+        toggleAllBtn.style.background = allEnabled ? '#cf222e' : '#238636';
+        toggleAllBtn.onclick = async () => {
+            const newState = !allEnabled;
+            userPets.forEach(([id]) => {
+                petCollection[id].enabled = newState;
+            });
+            await chrome.storage.local.set({ petCollection });
+            renderCollection();
+        };
+    }
 
     userPets.forEach(([id, data]) => {
         const petData = data as CollectionPet;
