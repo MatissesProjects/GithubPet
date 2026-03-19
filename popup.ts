@@ -1,4 +1,4 @@
-import { CollectionPet } from './engine.js';
+import type { CollectionPet } from './engine.js';
 import { monthNames } from './config.js';
 
 async function getCurrentUser(): Promise<string | null> {

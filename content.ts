@@ -1,4 +1,4 @@
-import { generateProceduralPet, PetState, CollectionPet } from './engine';
+import { generateProceduralPet, type PetState, type CollectionPet } from './engine';
 import { monthNames } from './config';
 import { 
     extractSignatureChars, 
