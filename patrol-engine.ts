@@ -48,11 +48,11 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
     const targetMonthName = idParts.find(p => monthNames.includes(p)) || "";
     const targetYear = idParts.find(p => /^\d{4}$/.test(p)) || "";
 
-    function moveToRandomDay() {
-        if (!petElement.parentElement) return;
+    function moveToRandomDay(): boolean {
+        if (!petElement.parentElement) return false;
         
         const graphContainer = document.querySelector('.js-calendar-graph');
-        if (!graphContainer) return;
+        if (!graphContainer) return false;
 
         // Reset cache if year changes or on heavy DOM changes (managed by content.ts triggers)
         const currentYear = graphContainer.getAttribute('data-year');
@@ -62,16 +62,22 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
         }
 
         const allDays = Array.from(graphContainer.querySelectorAll('.ContributionCalendar-day')) as HTMLElement[];
-        if (allDays.length === 0) return;
+        if (allDays.length === 0) return false;
 
         let patrolPool = getPatrolPool(allDays, targetMonthName, targetYear);
         if (patrolPool.length === 0) patrolPool = allDays;
 
         const targetDay = patrolPool[Math.floor(Math.random() * patrolPool.length)];
         
-        // Use offset-based positioning to reduce getBoundingClientRect calls
-        const targetX = targetDay.offsetLeft + (targetDay.offsetWidth / 2) - 12;
-        const targetY = targetDay.offsetTop + (targetDay.offsetHeight / 2) - 12;
+        // Calculate position relative to parent container for robust cross-UI positioning
+        const parentRect = graphContainer.getBoundingClientRect();
+        const targetRect = targetDay.getBoundingClientRect();
+
+        // If the target has no size or parent has no size, skip movement (could be in a detached/hidden state)
+        if (targetRect.width === 0 || parentRect.width === 0) return false;
+
+        const targetX = (targetRect.left - parentRect.left) + (targetRect.width / 2) - 12;
+        const targetY = (targetRect.top - parentRect.top) + (targetRect.height / 2) - 12;
 
         // 1. EXTRACT SQUARE COLOR
         const style = window.getComputedStyle(targetDay);
@@ -177,11 +183,26 @@ export function startPatrol(petElement: HTMLElement, petState: PetState): void {
             }
         }
         setTimeout(() => { if (petElement) petElement.classList.remove('is-moving'); }, PATROL_CONFIG.moveDuration);
+        return true;
     }
 
-    moveToRandomDay();
-    const interval = setInterval(() => {
-        if (!document.body.contains(petElement)) { clearInterval(interval); return; }
-        moveToRandomDay();
-    }, PATROL_CONFIG.baseInterval + Math.random() * PATROL_CONFIG.randomVariance);
+    function scheduleNextMove(delayOverride?: number) {
+        const delay = delayOverride || (PATROL_CONFIG.baseInterval + Math.random() * PATROL_CONFIG.randomVariance);
+        setTimeout(() => {
+            if (!document.body.contains(petElement)) return;
+            
+            if (moveToRandomDay()) {
+                scheduleNextMove(); // Success, use normal delay
+            } else {
+                scheduleNextMove(500); // Failed (empty graph or zero size), retry soon
+            }
+        }, delay);
+    }
+
+    // Start the cycle
+    if (moveToRandomDay()) {
+        scheduleNextMove();
+    } else {
+        scheduleNextMove(500); // Retry soon if initial move failed
+    }
 }
